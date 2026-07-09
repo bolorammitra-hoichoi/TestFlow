@@ -5,6 +5,7 @@
   const state = {
     token: localStorage.getItem('tf_token') || null,
     email: localStorage.getItem('tf_email') || null,
+    mustChange: localStorage.getItem('tf_must_change') === '1',
     view: 'run', // 'run' | 'history' | 'run-detail'
     error: null,
     agents: [],
@@ -16,14 +17,15 @@
     pollTimer: null,
   };
 
-  function setToken(token, email) {
-    state.token = token; state.email = email;
+  function setToken(token, email, mustChange) {
+    state.token = token; state.email = email; state.mustChange = !!mustChange;
     localStorage.setItem('tf_token', token);
     localStorage.setItem('tf_email', email);
+    localStorage.setItem('tf_must_change', mustChange ? '1' : '0');
   }
   function logout() {
-    state.token = null; state.email = null;
-    localStorage.removeItem('tf_token'); localStorage.removeItem('tf_email');
+    state.token = null; state.email = null; state.mustChange = false;
+    localStorage.removeItem('tf_token'); localStorage.removeItem('tf_email'); localStorage.removeItem('tf_must_change');
     render();
   }
 
@@ -56,7 +58,35 @@
       const password = document.getElementById('login-password').value;
       try {
         const data = await api('auth', { method: 'POST', body: { action: 'login', email, password } });
-        setToken(data.token, data.email);
+        setToken(data.token, data.email, data.mustChange);
+        state.error = null;
+        render();
+      } catch (err) {
+        state.error = err.message;
+        render();
+      }
+    };
+  }
+
+  // ── Set password (forced after first login on the shared default) ──────────
+  function renderSetPassword() {
+    root.innerHTML = `
+      <header class="tf"><h1>TestFlow <small>hoichoi &amp; sooper internal testing ground</small></h1></header>
+      <div class="card" style="max-width:360px;margin:40px auto;">
+        <p style="margin-top:0;color:var(--muted);font-size:13px;">You're signed in with the shared default password. Set a personal one before continuing.</p>
+        <form id="setpw-form">
+          <label>New password (min 8 characters)</label>
+          <input type="password" id="setpw-new" minlength="8" required />
+          <button type="submit">Set password</button>
+          ${state.error ? `<div class="error">${state.error}</div>` : ''}
+        </form>
+      </div>`;
+    document.getElementById('setpw-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const newPassword = document.getElementById('setpw-new').value;
+      try {
+        const data = await api('auth', { method: 'POST', body: { action: 'set-password', newPassword } });
+        setToken(data.token, data.email, data.mustChange);
         state.error = null;
         render();
       } catch (err) {
@@ -318,6 +348,7 @@
   // ── Router ──────────────────────────────────────────────────────────────────
   function render() {
     if (!state.token) return renderLogin();
+    if (state.mustChange) return renderSetPassword();
     if (state.view === 'history') return renderHistory();
     if (state.view === 'run-detail') return renderRunDetail();
     return renderRun();
