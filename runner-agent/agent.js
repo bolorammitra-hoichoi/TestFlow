@@ -99,18 +99,13 @@ async function executeRun(run, connectedDevices) {
     clearInterval(flushInterval);
     flushLogs();
 
-    const screenshots = [];
-    for (const shotPath of result.screenshotPaths) {
-      const fs = require('fs');
+    // No Firebase Storage in v1 (see PROJECT.md) — screenshots stay on this
+    // machine. Just record which ones exist and which are FLAG-prefixed, plus
+    // the local path, so the dashboard can list them even without hosting them.
+    const screenshots = result.screenshotPaths.map((shotPath) => {
       const name = path.basename(shotPath, '.png');
-      const dataBase64 = fs.readFileSync(shotPath).toString('base64');
-      try {
-        const uploaded = await api.postScreenshot(run.id, tcId, name, dataBase64);
-        screenshots.push({ name, url: uploaded.url, flagged: uploaded.flagged });
-      } catch (e) {
-        console.error('[testflow] screenshot upload failed:', e.message);
-      }
-    }
+      return { name, localPath: shotPath, flagged: /^FLAG-/i.test(name) };
+    });
 
     tcResults.push({
       tcId, name: tcId, status: result.status,

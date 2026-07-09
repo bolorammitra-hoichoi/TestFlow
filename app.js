@@ -268,13 +268,17 @@
   }
 
   function renderTcDetail(tc) {
+    // No Storage in v1 — screenshots live only on the tester's machine, so we
+    // just list filenames/flags instead of rendering images.
     return `
       <div class="card">
         <strong>${tc.name}</strong> <span class="badge ${tc.status}">${tc.status}</span>
         ${tc.errorMessage ? `<pre class="log">${escapeHtml(tc.errorMessage)}</pre>` : ''}
-        <div class="screenshots">
-          ${(tc.screenshots || []).map((s) => `<img class="${s.flagged ? 'flagged' : ''}" src="${s.url}" title="${s.name}" />`).join('')}
-        </div>
+        ${(tc.screenshots || []).length ? `
+          <div style="margin-top:10px;font-size:13px;color:var(--muted);">
+            Screenshots (on tester's machine only):
+            ${tc.screenshots.map((s) => `<div>${s.flagged ? '<span class="badge offline">FLAG</span> ' : ''}${escapeHtml(s.name)}</div>`).join('')}
+          </div>` : ''}
       </div>`;
   }
 

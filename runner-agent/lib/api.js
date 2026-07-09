@@ -74,8 +74,4 @@ async function postLogs(runId, tcId, lines) {
   return call(`/api/runs/${runId}/logs`, { method: 'POST', body: { tcId, lines } });
 }
 
-async function postScreenshot(runId, tcId, name, dataBase64) {
-  return call(`/api/runs/${runId}/screenshot`, { method: 'POST', body: { tcId, name, dataBase64 } });
-}
-
-module.exports = { login, heartbeat, startRun, completeRun, postLogs, postScreenshot };
+module.exports = { login, heartbeat, startRun, completeRun, postLogs };

@@ -51,6 +51,8 @@ module.exports = async (req, res) => {
         for (const tc of tcResults) {
           const tcRef = ref.collection('tcResults').doc(tc.tcId);
           batch.set(tcRef, tc);
+          // v1 has no Storage — tc.screenshots holds {name, flagged} only,
+          // pointing at files that stay on the tester's own machine.
           tcSummary.push({
             tcId: tc.tcId, name: tc.name, status: tc.status,
             flagCount: Array.isArray(tc.screenshots) ? tc.screenshots.filter((s) => s.flagged).length : 0,

@@ -53,6 +53,3 @@ tr.clickable:hover { background: rgba(255,255,255,0.03); }
 .tc-checkbox input { width: auto; }
 
 pre.log { background: #05070a; color: #cbd5e1; padding: 12px; border-radius: 6px; max-height: 400px; overflow-y: auto; font-size: 12px; line-height: 1.5; }
-.screenshots { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-.screenshots img { width: 160px; border-radius: 6px; border: 1px solid var(--border); }
-.screenshots .flagged { border-color: var(--warn); }

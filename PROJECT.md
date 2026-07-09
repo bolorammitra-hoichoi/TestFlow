@@ -27,27 +27,42 @@ not one website:
    everything back over HTTP. It never holds a Firebase credential.
 3. **Dashboard + API** (`/`, `api/`) — a vanilla-JS SPA + Vercel serverless
    functions, deployed to Vercel. The API is the only thing holding the
-   Firebase Admin service-account key; it's the sole path to Firestore/Storage
-   for both the browser and every runner agent.
+   Firebase Admin service-account key; it's the sole path to Firestore for
+   both the browser and every runner agent.
 
-Own Vercel account and own Firebase project — intentionally separate from
-the user's other project, [BridgeCx](../BridgeCx), whose account is already
-near the Hobby plan's 12-serverless-function cap. Only the *patterns*
-(`lib/auth.js`'s session/password scheme, `lib/firebase.js`'s base64
-service-account init) are reused, not the infrastructure itself.
+Own Vercel *project* (same team as BridgeCx is fine — Vercel's 12-function
+Hobby cap is per-deployment, not account-wide, confirmed against Vercel's own
+docs) and its own, fully separate Firebase project (`testflow-9ebcf`). The
+Firebase separation is a harder requirement than the Vercel one: it's about
+never putting a key with access to production hoichoi data into TestFlow's
+env vars. Only the *patterns* (`lib/auth.js`'s session/password scheme,
+`lib/firebase.js`'s base64 service-account init) are reused from BridgeCx,
+not any infrastructure.
+
+**No Firebase Storage in v1.** Storage requires the Blaze (pay-as-you-go)
+plan even for free-tier usage, and reusing an existing production Firebase
+project's Storage bucket to dodge that billing step was considered and
+rejected — a service-account key generally grants access to everything in
+that project, not just one bucket/folder, which would put production data
+one leaked-key or bug away from TestFlow. So for now, Maestro's screenshots
+(including `FLAG-`-prefixed ones) stay on the tester's own machine; the
+dashboard lists their filenames/flags but can't display the images. Revisit
+by giving `testflow-9ebcf` its own Blaze billing once that's worth doing.
 
 ## Status
 
-Phase 1 (scaffold) built: repo layout, auth, Firestore data model, all 6 API
-functions, runner agent skeleton, dashboard skeleton, QAForge's existing
-flows moved into the new layout under `flows/hoichoi/android/v-current/`
-(rename that folder to the actual hoichoi build version it was tested
-against).
+Phase 1 (scaffold) built and live: GitHub repo, Vercel project
+(`hoichoi-cx/test-flow`), Firebase project (`testflow-9ebcf`, Firestore
+enabled), `SESSION_SECRET`/`DEFAULT_PASSWORD` env vars set. All 5 API
+functions (`auth`, `agents`, `runs`, `runs/[id]`, `runs/[id]/logs` —
+screenshot upload was removed along with Storage), runner agent, dashboard,
+and QAForge's existing flows moved into
+`flows/hoichoi/android/v-current/` (rename that folder to the actual hoichoi
+build version it was tested against).
 
 **Not yet done / needs a real deploy to verify:**
-- Create the actual Vercel project + Firebase project, wire up env vars
-  (`FIREBASE_SERVICE_ACCOUNT_B64`, `FIREBASE_STORAGE_BUCKET`, `SESSION_SECRET`,
-  `DEFAULT_PASSWORD`), and do a real end-to-end run against a connected phone.
+- Set `FIREBASE_SERVICE_ACCOUNT_B64` in Vercel from `testflow-9ebcf`'s
+  service account, then do a real end-to-end run against a connected phone.
 - iOS support in the runner agent (idb/simctl) — needs a Mac, materially more
   work than Android, not a bolt-on.
 - sooper's flows — none exist yet; same `flows/sooper/{platform}/{version}/`
