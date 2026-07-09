@@ -1,0 +1,9 @@
+{
+  "name": "testflow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TestFlow — internal QA testing platform for hoichoi and sooper. Self-hosted on Vercel + Firebase (own project, separate from BridgeCx).",
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}

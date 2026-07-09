@@ -1,0 +1,46 @@
+appId: com.viewlift.hoichoi
+---
+- launchApp
+- waitForAnimationToEnd
+- runFlow: startup-check.yaml
+- takeScreenshot: "01-home-screen-loaded"
+- assertVisible: "Home"
+- assertVisible: "Search"
+- assertVisible: "Downloads"
+- assertVisible: "Upcoming"
+- assertVisible: "Account"
+- takeScreenshot: "02-bottom-nav-validated"
+
+- tapOn:
+    text: "Search"
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: "03-search-tab"
+
+- tapOn:
+    text: "Downloads"
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: "04-downloads-tab"
+
+- tapOn:
+    text: "Upcoming"
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: "05-upcoming-tab"
+
+- tapOn: "Account"
+- waitForAnimationToEnd
+- takeScreenshot: "06-account-tab"
+- assertVisible: "Login / Sign Up"
+- assertVisible: "Subscribe"
+- assertVisible: "Share"
+- assertVisible: "Support"
+- takeScreenshot: "07-account-content-validated"
+
+- tapOn:
+    text: "Home"
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: "08-back-to-home"
+- stopApp

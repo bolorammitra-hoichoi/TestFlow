@@ -1,0 +1,155 @@
+appId: com.viewlift.hoichoi
+---
+# ─────────────────────────────────────────────
+# TC-04 : Login Error Handling & UI Validation
+# ─────────────────────────────────────────────
+
+# Step 1 — Launch and open login sheet
+- launchApp
+- waitForAnimationToEnd
+- runFlow: startup-check.yaml
+- tapOn: "Account"
+- waitForAnimationToEnd
+- tapOn: "Login / Sign Up"
+- waitForAnimationToEnd
+- takeScreenshot: "01-login-sheet-opened"
+- tapOn: "Login with Mobile Number"
+- waitForAnimationToEnd
+- takeScreenshot: "02-mobile-input-ready"
+
+# Step 2 — Progressive digit check: Get OTP should NOT appear until 10 digits
+- inputText: "1"
+- takeScreenshot: "03-after-1-digit"
+- assertNotVisible: "Get OTP"
+
+- inputText: "2"
+- takeScreenshot: "04-after-2-digits"
+- assertNotVisible: "Get OTP"
+
+- inputText: "3"
+- takeScreenshot: "05-after-3-digits"
+- assertNotVisible: "Get OTP"
+
+- inputText: "4"
+- takeScreenshot: "06-after-4-digits"
+- assertNotVisible: "Get OTP"
+
+- inputText: "5"
+- takeScreenshot: "07-after-5-digits"
+- assertNotVisible: "Get OTP"
+
+- inputText: "6"
+- takeScreenshot: "08-after-6-digits"
+- assertNotVisible: "Get OTP"
+
+- inputText: "7"
+- takeScreenshot: "09-after-7-digits"
+- assertNotVisible: "Get OTP"
+
+- inputText: "8"
+- takeScreenshot: "10-after-8-digits"
+- assertNotVisible: "Get OTP"
+
+- inputText: "9"
+- takeScreenshot: "11-after-9-digits"
+- assertNotVisible: "Get OTP"
+
+# 10th digit — Get OTP must now appear
+- inputText: "0"
+- takeScreenshot: "12-after-10-digits"
+- assertVisible: "Get OTP"
+- takeScreenshot: "13-get-otp-visible-at-10-digits-confirmed"
+
+# Step 3 — Test country code selector (number field still has 10 digits from above)
+- tapOn: "+91"
+- waitForAnimationToEnd
+- takeScreenshot: "14-country-selector-opened"
+
+# Search for Germany — tap the white search bar first to open keyboard
+- tapOn:
+    point: "54%,15%"
+- waitForAnimationToEnd
+- inputText: "germany"
+- waitForAnimationToEnd
+- takeScreenshot: "15-germany-searched"
+- assertVisible: "+49"
+- takeScreenshot: "16-germany-result-confirmed"
+
+# Tap back arrow to return to login screen
+- tapOn:
+    point: "8%,15%"
+- waitForAnimationToEnd
+- takeScreenshot: "17-back-to-login-sheet"
+
+# Step 4 — Tap Get OTP (number already in field) — should trigger invalid number error
+- tapOn: "Get OTP"
+- waitForAnimationToEnd
+- takeScreenshot: "18-error-popup"
+- assertVisible: "Incorrect Phone Number"
+- assertVisible: "Please enter a valid phone number."
+- takeScreenshot: "19-error-validated"
+- tapOn: "Close"
+- waitForAnimationToEnd
+- takeScreenshot: "20-error-dismissed"
+
+# Step 5 — Test Terms & Privacy Policy link
+- tapOn: "I agree to the Terms & Privacy policy and am above 18+ years of age."
+- waitForAnimationToEnd
+- takeScreenshot: "21-terms-privacy-page-opened"
+- assertVisible:
+    text: "Privacy Policy"
+    index: 0
+- takeScreenshot: "22-privacy-policy-validated"
+- tapOn:
+    id: "com.android.chrome:id/close_button"
+- waitForAnimationToEnd
+- tapOn:
+    id: "BottomSheetTopBarClose"
+- tapOn: "Login / Sign Up"
+- waitForAnimationToEnd
+- takeScreenshot: "23-login-sheet-reopened"
+
+# Step 6 — Test Facebook icon
+- tapOn:
+    id: "login_Facebook"
+- waitForAnimationToEnd
+- takeScreenshot: "24-facebook-opened"
+- assertVisible: "Facebook from Meta"
+- takeScreenshot: "25-facebook-validated"
+- tapOn: "Close tab"
+- waitForAnimationToEnd
+- takeScreenshot: "26-facebook-closed"
+
+# Step 7 — Test Google icon
+- tapOn: "Google"
+- waitForAnimationToEnd
+- takeScreenshot: "27-google-sheet-opened"
+- assertVisible: "Sign in with Google"
+- takeScreenshot: "28-google-validated"
+- tapOn: "Close"
+- waitForAnimationToEnd
+- takeScreenshot: "29-google-closed"
+
+# Step 8 — Test Apple icon
+- tapOn: "Apple"
+- waitForAnimationToEnd
+- takeScreenshot: "30-apple-opened"
+- assertVisible: "Apple Account"
+- takeScreenshot: "31-apple-validated"
+- tapOn: "Close tab"
+- waitForAnimationToEnd
+- takeScreenshot: "32-apple-closed"
+
+# Step 9 — Test Email icon
+- tapOn: "Email"
+- waitForAnimationToEnd
+- takeScreenshot: "33-email-sheet-opened"
+- assertVisible: "Login with Email & OTP"
+- takeScreenshot: "34-email-sheet-validated"
+- tapOn: "Back Icon"
+- waitForAnimationToEnd
+- tapOn: "Back Icon"
+- waitForAnimationToEnd
+- takeScreenshot: "35-email-closed"
+
+- stopApp

@@ -1,0 +1,559 @@
+appId: com.viewlift.hoichoi
+---
+# Step 1 — Launch
+- launchApp
+- waitForAnimationToEnd
+- runFlow: startup-check.yaml
+- takeScreenshot: "01-app-launched"
+
+# Step 2 — Account page logged out validation
+- tapOn: "Account"
+- waitForAnimationToEnd
+- takeScreenshot: "02-account-page"
+- assertVisible: "App Logo"
+- takeScreenshot: "02a-language-icon-visible"
+- assertVisible: "Subscribe"
+- assertVisible:
+    id: "btn_Subscribe"
+- assertVisible: "Play Icon"
+- assertVisible: "Login / Sign Up"
+- assertVisible: "Share"
+- assertVisible: "Rate Us"
+- assertVisible: "Support"
+- assertVisible:
+    text: "Support"
+    index: 1
+- assertVisible:
+    text: "Rate Us"
+    index: 1
+- assertVisible:
+    text: "Share"
+    index: 1
+- takeScreenshot: "03-account-logged-out-validated"
+
+# Step 3 — Login with mobile number
+- tapOn: "Login / Sign Up"
+- waitForAnimationToEnd
+- tapOn: "Login with Mobile Number"
+- waitForAnimationToEnd
+- inputText: "9876543210"
+- assertVisible: "Get OTP"
+- tapOn: "Get OTP"
+- waitForAnimationToEnd
+- assertVisible: "Confirm OTP"
+- inputText: "2"
+- inputText: "1"
+- inputText: "2"
+- inputText: "1"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Device limit reached"
+    commands:
+      - tapOn:
+          text: "Logout"
+          index: 0
+      - waitForAnimationToEnd
+      - tapOn: "Logout"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            visible: "Device limit reached"
+          commands:
+            - tapOn:
+                text: "Logout"
+                index: 0
+            - waitForAnimationToEnd
+            - tapOn: "Logout"
+            - waitForAnimationToEnd
+            - runFlow:
+                when:
+                  visible: "Device limit reached"
+                commands:
+                  - tapOn:
+                      text: "Logout"
+                      index: 0
+                  - waitForAnimationToEnd
+                  - tapOn: "Logout"
+                  - waitForAnimationToEnd
+      - tapOn: "Continue"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Maybe Later"
+    commands:
+      - tapOn: "Maybe Later"
+      - waitForAnimationToEnd
+- assertNotVisible: "Login / Sign Up"
+- takeScreenshot: "04-logged-in-confirmed"
+
+# Step 4 — Account page logged in validation
+- assertVisible: "App Logo"
+- takeScreenshot: "07a-language-icon-visible"
+- assertVisible: "Settings"
+- assertVisible: "hoichoi"
+- assertVisible: "TEST HC 200 Dev"
+- assertVisible: "+9198******10"
+- runFlow:
+    when:
+      visible: "Continue Watching"
+    commands:
+      - assertVisible: "Continue Watching"
+      - takeScreenshot: "05-continue-watching-visible"
+- runFlow:
+    when:
+      notVisible: "Continue Watching"
+    commands:
+      - takeScreenshot: "05-continue-watching-NOT-visible-FLAG"
+- runFlow:
+    when:
+      visible: "Watchlist"
+    commands:
+      - assertVisible: "Watchlist"
+      - takeScreenshot: "06-watchlist-visible"
+- runFlow:
+    when:
+      notVisible: "Watchlist"
+    commands:
+      - takeScreenshot: "06-watchlist-NOT-visible-FLAG"
+- takeScreenshot: "07-account-logged-in-validated"
+
+# Step 5 — Play content from home
+- tapOn:
+    text: "Home"
+    index: 0
+- waitForAnimationToEnd
+- tapOn: "Shows"
+- waitForAnimationToEnd
+- tapOn: "HomeItem"
+- waitForAnimationToEnd
+- tapOn: "Watch Now"
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Parental Pin"
+    commands:
+      - tapOn: "1"
+      - tapOn: "2"
+      - tapOn: "3"
+      - tapOn: "4"
+      - waitForAnimationToEnd
+- takeScreenshot: "08-player-opened"
+
+# Step 6 — Player controls validation
+- tapOn:
+    point: "50%,50%"
+- assertVisible: "fastForward"
+- assertVisible: "rewind"
+- assertVisible: "Cast icon"
+- assertVisible: "zoom_out_in"
+- assertVisible: "Playback Settings"
+- takeScreenshot: "09-player-controls-validated"
+
+# Step 7 — Playback settings
+- tapOn:
+    point: "52%,80%"
+- assertVisible: "Subtitles"
+- assertVisible: "Subtitles (Off)"
+- tapOn: "Speed"
+- assertVisible: "1.5x"
+- assertVisible: "1.25x"
+- assertVisible: "1.0x"
+- assertVisible: "0.75x"
+- assertVisible: "0.5x"
+- tapOn: "Speed (1.0)"
+- takeScreenshot: "10-speed-options-validated"
+
+# Step 8 — Subtitles toggle
+# Tap subtitles — if popup opens select English, otherwise it toggles directly
+- tapOn: "Subtitles (Off)"
+- runFlow:
+    when:
+      visible: "English"
+    commands:
+      - tapOn: "English"
+# Assert subtitle is now English
+- runFlow:
+    when:
+      visible: "Subtitles (English)"
+    commands:
+      - assertVisible: "Subtitles (English)"
+      - takeScreenshot: "11-subtitles-english-confirmed"
+# Tap again to turn off — if popup opens select Off
+- runFlow:
+    when:
+      visible: "Subtitles (English)"
+    commands:
+      - tapOn: "Subtitles (English)"
+      - runFlow:
+          when:
+            visible: "Off"
+          commands:
+            - tapOn: "Off"
+# Assert subtitle is back to Off, English or Bengali (any is valid)
+- runFlow:
+    when:
+      visible: "Subtitles (Off)"
+    commands:
+      - assertVisible: "Subtitles (Off)"
+      - takeScreenshot: "12-subtitles-off-confirmed"
+- runFlow:
+    when:
+      visible: "Subtitles (English)"
+    commands:
+      - assertVisible: "Subtitles (English)"
+      - takeScreenshot: "12-subtitles-english-confirmed"
+- runFlow:
+    when:
+      visible: "Subtitles (Bengali)"
+    commands:
+      - assertVisible: "Subtitles (Bengali)"
+      - takeScreenshot: "12-subtitles-bengali-confirmed"
+
+# Step 9 — Video quality
+- tapOn:
+    point: "50%,50%"
+- tapOn:
+    point: "50%,50%"
+- tapOn: "Pause"
+- tapOn:
+    point: "52%,80%"
+- tapOn:
+    point: "50%,50%"
+- tapOn:
+    point: "52%,80%"
+- runFlow:
+    when:
+      visible: "Subtitles (English)"
+    commands:
+      - assertVisible: "Subtitles (English)"
+      - tapOn: "Subtitles (English)"
+      - runFlow:
+          when:
+            visible: "English"
+          commands:
+            - tapOn: "English"
+- runFlow:
+    when:
+      visible: "Subtitles (Off)"
+    commands:
+      - assertVisible: "Subtitles (Off)"
+      - tapOn: "Subtitles (Off)"
+      - runFlow:
+          when:
+            visible: "English"
+          commands:
+            - tapOn: "English"
+- tapOn:
+    point: "50%,50%"
+- tapOn:
+    point: "52%,80%"
+- tapOn:
+    point: "50%,50%"
+- tapOn:
+    point: "52%,80%"
+- runFlow:
+    when:
+      visible: "Subtitles (English)"
+    commands:
+      - assertVisible: "Subtitles (English)"
+      - takeScreenshot: "13a-subtitles-english-confirmed"
+- takeScreenshot: "13b-subtitles-toggled"
+- tapOn:
+    point: "50%,50%"
+- tapOn:
+    point: "52%,80%"
+- tapOn:
+    point: "50%,50%"
+- tapOn:
+    point: "52%,80%"
+- assertVisible: "Video Quality"
+- assertVisible: "Video Quality (Auto)"
+- tapOn: "Video Quality (Auto)"
+- assertVisible: "Auto"
+- assertVisible: "High"
+- assertVisible: "Medium"
+- assertVisible: "Low"
+- takeScreenshot: "13-video-quality-options"
+- tapOn: "Medium"
+- assertVisible: "Video Quality (Medium)"
+- tapOn: "Video Quality (Medium)"
+- tapOn: "Low"
+- assertVisible: "Video Quality (Low)"
+- takeScreenshot: "14-video-quality-validated"
+
+# Ensure content is playing before PiP
+- tapOn:
+    point: "50%,50%"
+- runFlow:
+    when:
+      visible: "Play"
+    commands:
+      - tapOn: "Play"
+- assertVisible: "Pause"
+
+# Step 11 — Picture in Picture
+- pressKey: Home
+- waitForAnimationToEnd
+- takeScreenshot: "16-pip-mode"
+- tapOn:
+    id: "android:id/content"
+- waitForAnimationToEnd
+- tapOn:
+    id: "com.android.systemui:id/expand_button"
+- waitForAnimationToEnd
+- tapOn:
+    id: "com.android.launcher:id/page_indicator"
+- waitForAnimationToEnd
+- tapOn:
+    id: "com.android.systemui:id/expand_button"
+- waitForAnimationToEnd
+- takeScreenshot: "17-pip-expanded"
+- tapOn: "zoom_out_in"
+- waitForAnimationToEnd
+- tapOn:
+    point: "50%,50%"
+- tapOn: "zoom_out_in"
+- waitForAnimationToEnd
+- tapOn:
+    point: "50%,50%"
+- tapOn: "Playback Settings"
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      notVisible: "App Logo"
+    commands:
+      - tapOn:
+          id: "com.android.systemui:id/back"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            notVisible: "App Logo"
+          commands:
+            - tapOn:
+                id: "com.android.systemui:id/back"
+            - waitForAnimationToEnd
+            - runFlow:
+                when:
+                  notVisible: "App Logo"
+                commands:
+                  - tapOn:
+                      id: "com.android.systemui:id/back"
+                  - waitForAnimationToEnd
+- assertVisible: "App Logo"
+- takeScreenshot: "18-back-to-home"
+
+# Step 12 — Download content
+- tapOn: "Shows"
+- waitForAnimationToEnd
+- tapOn:
+    point: "18%,83%"
+- waitForAnimationToEnd
+- assertVisible: "Play"
+- assertVisible: "Trailer"
+- takeScreenshot: "19-show-details-page"
+- tapOn:
+    text: "~Download S\\d+"
+- waitForAnimationToEnd
+- assertVisible: "Downloading Quality"
+- assertVisible:
+    id: "BottomSheetTopBarClose"
+- assertVisible:
+    text: "High"
+    index: 1
+- assertVisible:
+    text: "Standard"
+    index: 1
+- assertVisible:
+    text: "Low"
+    index: 1
+- takeScreenshot: "20-download-quality-options"
+- tapOn:
+    text: "Low"
+    index: 1
+- waitForAnimationToEnd
+- assertVisible: "Make this my default setting"
+- tapOn: "Save Changes"
+- waitForAnimationToEnd
+- assertVisible:
+    text: "Pause"
+    index: 0
+- assertVisible:
+    text: "View More"
+    index: 0
+- tapOn:
+    text: "View More"
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: "21-download-started"
+- extendedWaitUntil:
+    visible:
+      id: "btn_replay"
+    timeout: 540000
+- tapOn: "Close"
+- waitForAnimationToEnd
+- takeScreenshot: "22-trailer-completed"
+
+# Step 13 — Downloads tab validation
+- tapOn: "Downloads"
+- waitForAnimationToEnd
+- assertVisible: "My Downloads"
+- assertVisible: "Clear All"
+- assertVisible:
+    text: "All"
+    index: 0
+- tapOn:
+    text: "Shows"
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: "23-downloads-tab-validated"
+
+# Step 14 — Offline playback
+- tapOn:
+    point: "50%,27%"
+- waitForAnimationToEnd
+- setAirplaneMode: enabled
+- waitForAnimationToEnd
+- takeScreenshot: "24-airplane-mode-on"
+- tapOn:
+    point: "18%,47%"
+- waitForAnimationToEnd
+- tapOn: "Play"
+- waitForAnimationToEnd
+- takeScreenshot: "25-offline-playback-started"
+- tapOn:
+    point: "50%,50%"
+- assertVisible: "fastForward"
+- assertVisible: "rewind"
+- assertVisible: "Cast icon"
+- assertVisible: "zoom_out_in"
+- assertVisible: "Subtitles (Off)"
+- takeScreenshot: "26-offline-player-controls"
+- tapOn: "Subtitles"
+- waitForAnimationToEnd
+- assertVisible: "Subtitles (English)"
+- tapOn:
+    point: "50%,50%"
+- tapOn: "Speed (1.0)"
+- assertVisible: "0.5x"
+- assertVisible: "0.75x"
+- assertVisible: "1.0x"
+- assertVisible: "1.25x"
+- assertVisible: "1.5x"
+- tapOn: "1.5x"
+- waitForAnimationToEnd
+- tapOn:
+    point: "50%,50%"
+- tapOn:
+    point: "50%,50%"
+- assertVisible: "Speed (1.5)"
+- takeScreenshot: "27-offline-speed-validated"
+
+# Step 15 — Back and delete download
+- tapOn:
+    id: "com.android.systemui:id/back"
+- waitForAnimationToEnd
+- takeScreenshot: "28-back-from-offline-player"
+- tapOn: "delete button"
+- waitForAnimationToEnd
+- assertVisible: "Delete"
+- assertVisible: "Yes"
+- assertVisible: "No"
+- takeScreenshot: "29-delete-confirmation"
+- tapOn: "Yes"
+- waitForAnimationToEnd
+
+# Step 16 — Clear all downloads if any remain
+- runFlow:
+    when:
+      notVisible: "No Downloads Yet"
+    commands:
+      - tapOn: "Clear All"
+      - waitForAnimationToEnd
+      - assertVisible: "Delete all downloads"
+      - assertVisible: "Yes"
+      - assertVisible: "No"
+      - tapOn: "Yes"
+      - waitForAnimationToEnd
+- assertVisible: "No Downloads Yet"
+- takeScreenshot: "30-downloads-cleared"
+
+# Step 17 — Disable airplane mode
+- setAirplaneMode: disabled
+- waitForAnimationToEnd
+- takeScreenshot: "31-airplane-mode-off"
+- runFlow:
+    when:
+      visible: "No Internet Connection"
+    commands:
+      - takeScreenshot: "32-no-internet-connection-FLAG"
+      - tapOn: "Retry"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            visible: "No Internet Connection"
+          commands:
+            - tapOn: "Retry"
+            - waitForAnimationToEnd
+            - runFlow:
+                when:
+                  visible: "No Internet Connection"
+                commands:
+                  - tapOn: "Retry"
+                  - waitForAnimationToEnd
+                  - runFlow:
+                      when:
+                        visible: "No Internet Connection"
+                      commands:
+                        - tapOn: "Retry"
+                        - waitForAnimationToEnd
+                        - runFlow:
+                            when:
+                              visible: "No Internet Connection"
+                            commands:
+                              - tapOn: "Retry"
+                              - waitForAnimationToEnd
+                              - runFlow:
+                                  when:
+                                    visible: "No Internet Connection"
+                                  commands:
+                                    - tapOn: "Retry"
+                                    - waitForAnimationToEnd
+                                    - takeScreenshot: "33-no-internet-after-6-retries-ERROR"
+
+# Step 18 — Logout
+- runFlow:
+    when:
+      notVisible: "App Logo"
+    commands:
+      - tapOn:
+          id: "com.android.systemui:id/back"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            notVisible: "App Logo"
+          commands:
+            - tapOn:
+                id: "com.android.systemui:id/back"
+            - waitForAnimationToEnd
+            - runFlow:
+                when:
+                  notVisible: "App Logo"
+                commands:
+                  - tapOn:
+                      id: "com.android.systemui:id/back"
+                  - waitForAnimationToEnd
+- tapOn: "Account"
+- waitForAnimationToEnd
+- tapOn:
+    point: "91%,9%"
+- waitForAnimationToEnd
+- tapOn: "Logout"
+- waitForAnimationToEnd
+- tapOn: "Logout"
+- waitForAnimationToEnd
+- assertVisible: "Login / Sign Up"
+- takeScreenshot: "34-logged-out-confirmed"
+
+- stopApp

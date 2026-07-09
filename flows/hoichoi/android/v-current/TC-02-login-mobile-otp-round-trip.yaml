@@ -1,0 +1,133 @@
+appId: com.viewlift.hoichoi
+---
+- launchApp
+- waitForAnimationToEnd
+- runFlow: startup-check.yaml
+
+# Step 1 — Open Account tab and verify logged out state
+- tapOn: "Account"
+- waitForAnimationToEnd
+- takeScreenshot: "01-account-logged-out"
+- assertVisible: "Login / Sign Up"
+
+# Step 2 — Open login bottom sheet and validate elements
+- tapOn: "Login / Sign Up"
+- waitForAnimationToEnd
+- takeScreenshot: "02-login-popup-opened"
+- assertVisible: "Login with Mobile Number"
+- assertVisible: "Previous Sessions"
+- takeScreenshot: "03-login-sheet-validated"
+
+# Step 3 — Tap Login with Mobile Number and enter number
+- tapOn: "Login with Mobile Number"
+- waitForAnimationToEnd
+- inputText: "9876543210"
+- takeScreenshot: "04-mobile-number-entered"
+
+# Step 4 — Verify Get OTP button appears after number entry and tap it
+- assertVisible: "Get OTP"
+- takeScreenshot: "05-get-otp-button-visible"
+- tapOn: "Get OTP"
+- waitForAnimationToEnd
+- takeScreenshot: "06-otp-screen"
+
+# Step 5 — Validate OTP screen elements
+- assertVisible: "Confirm OTP"
+- takeScreenshot: "07-otp-screen-validated"
+
+# Step 6 — Enter 4 OTP digits one by one
+# Auto-advances between boxes and auto-submits after 4th digit
+- inputText: "2"
+- inputText: "1"
+- inputText: "2"
+- inputText: "1"
+- takeScreenshot: "08-otp-digits-entered"
+
+# Step 7 — Wait for auto-submission and login to complete
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: "09-post-otp-auto-submitted"
+
+# Step 8 — Handle device limit screen (may or may not appear)
+# Each device removal needs TWO taps:
+#   Tap 1 — Logout button on the device row (index 0 = first other device)
+#   Tap 2 — Logout button on the "Remove this device?" confirmation popup
+- runFlow:
+    when:
+      visible: "Device limit reached"
+    commands:
+      - takeScreenshot: "10-device-limit-screen"
+
+      # Remove excess device 1
+      - tapOn:
+          text: "Logout"
+          index: 0
+      - waitForAnimationToEnd
+      - takeScreenshot: "11-device-1-removal-popup"
+      - tapOn: "Logout"
+      - waitForAnimationToEnd
+      - takeScreenshot: "12-device-1-removed"
+
+      # Remove excess device 2 if still over limit
+      - runFlow:
+          when:
+            visible: "Device limit reached"
+          commands:
+            - tapOn:
+                text: "Logout"
+                index: 0
+            - waitForAnimationToEnd
+            - takeScreenshot: "13-device-2-removal-popup"
+            - tapOn: "Logout"
+            - waitForAnimationToEnd
+            - takeScreenshot: "14-device-2-removed"
+
+            # Remove excess device 3 if still over limit
+            - runFlow:
+                when:
+                  visible: "Device limit reached"
+                commands:
+                  - tapOn:
+                      text: "Logout"
+                      index: 0
+                  - waitForAnimationToEnd
+                  - takeScreenshot: "15-device-3-removal-popup"
+                  - tapOn: "Logout"
+                  - waitForAnimationToEnd
+                  - takeScreenshot: "16-device-3-removed"
+
+      # Tap Continue once device count is within limit
+      - tapOn: "Continue"
+      - waitForAnimationToEnd
+      - takeScreenshot: "17-device-limit-cleared"
+
+# Step 9 — Verify successfully logged in
+# Match ANY hoichoi subscription plan name — confirms login regardless of plan type
+- assertNotVisible: "Login / Sign Up"
+- takeScreenshot: "18-logged-in-confirmed-login-button-gone"
+
+# Step 10 — Open Settings via gear icon at top right of Account page
+- tapOn:
+    point: "91%,9%"
+- waitForAnimationToEnd
+- takeScreenshot: "19-settings-page-opened"
+- assertVisible: "Logout"
+- takeScreenshot: "20-logout-button-visible-in-settings"
+
+# Step 11 — Tap Logout in Settings
+# A confirmation bottom sheet appears: "Are you sure you want to logout?"
+- tapOn: "Logout"
+- waitForAnimationToEnd
+- takeScreenshot: "21-logout-confirmation-sheet"
+
+# Step 12 — Confirm logout on the bottom sheet (tap Logout again)
+- tapOn: "Logout"
+- waitForAnimationToEnd
+- takeScreenshot: "22-logged-out"
+
+# Step 13 — Go to Account tab and verify logged out state restored
+- tapOn: "Account"
+- waitForAnimationToEnd
+- assertVisible: "Login / Sign Up"
+- takeScreenshot: "23-logged-out-state-restored"
+- stopApp

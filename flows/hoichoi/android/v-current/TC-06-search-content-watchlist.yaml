@@ -1,0 +1,193 @@
+appId: com.viewlift.hoichoi
+---
+# Step 1 — Login with mobile number
+- launchApp
+- waitForAnimationToEnd
+- runFlow: startup-check.yaml
+- tapOn: "Account"
+- waitForAnimationToEnd
+- tapOn: "Login / Sign Up"
+- waitForAnimationToEnd
+- tapOn: "Login with Mobile Number"
+- waitForAnimationToEnd
+- inputText: "9876543210"
+- assertVisible: "Get OTP"
+- tapOn: "Get OTP"
+- waitForAnimationToEnd
+- assertVisible: "Confirm OTP"
+- inputText: "2"
+- inputText: "1"
+- inputText: "2"
+- inputText: "1"
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Device limit reached"
+    commands:
+      - takeScreenshot: "00-device-limit-reached"
+      - tapOn:
+          text: "Logout"
+          index: 0
+      - waitForAnimationToEnd
+      - tapOn: "Logout"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            visible: "Device limit reached"
+          commands:
+            - tapOn:
+                text: "Logout"
+                index: 0
+            - waitForAnimationToEnd
+            - tapOn: "Logout"
+            - waitForAnimationToEnd
+            - runFlow:
+                when:
+                  visible: "Device limit reached"
+                commands:
+                  - tapOn:
+                      text: "Logout"
+                      index: 0
+                  - waitForAnimationToEnd
+                  - tapOn: "Logout"
+                  - waitForAnimationToEnd
+      - tapOn: "Continue"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Maybe Later"
+    commands:
+      - tapOn: "Maybe Later"
+      - waitForAnimationToEnd
+- assertNotVisible: "Login / Sign Up"
+- takeScreenshot: "00-logged-in-confirmed"
+
+# Step 2 — Search
+- tapOn: "DiscoverItem"
+- waitForAnimationToEnd
+- tapOn:
+    text: "Search"
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: "01-search-page-opened"
+- inputText: "Saba"
+- waitForAnimationToEnd
+- takeScreenshot: "02-search-results"
+- assertVisible: "Saba"
+- takeScreenshot: "03-search-result-validated"
+- tapOn:
+    text: "Saba"
+    index: 2
+- waitForAnimationToEnd
+- takeScreenshot: "04-content-details-page"
+
+# Step 3 — Content details validation
+- assertVisible: "Download"
+- assertVisible:
+    text: "Saba"
+    index: 0
+- runFlow:
+    when:
+      visible: "Watch Now"
+    commands:
+      - assertVisible: "Watch Now"
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - assertVisible: "Continue"
+- takeScreenshot: "05-content-details-validated"
+
+# Step 4 — Trailer and share
+- tapOn:
+    point: "20%,61%"
+- waitForAnimationToEnd
+- takeScreenshot: "06-trailer-tapped"
+- tapOn:
+    point: "50%,61%"
+- waitForAnimationToEnd
+- takeScreenshot: "07-second-tap"
+- tapOn:
+    id: "item_unselected_Share"
+- waitForAnimationToEnd
+- takeScreenshot: "08-share-sheet-opened"
+- tapOn: "https://www.hoichoi.tv/movies/saba"
+- waitForAnimationToEnd
+- assertVisible: "Saba"
+- takeScreenshot: "09-share-link-validated"
+- tapOn:
+    id: "com.android.systemui:id/back"
+- waitForAnimationToEnd
+- takeScreenshot: "10-share-closed"
+
+# Step 5 — Watchlist
+- tapOn: "Account"
+- waitForAnimationToEnd
+- tapOn:
+    id: "Watchlist"
+- waitForAnimationToEnd
+- takeScreenshot: "11-watchlist-opened"
+- assertVisible:
+    text: "Saba"
+    index: 1
+- takeScreenshot: "12-saba-in-watchlist"
+- tapOn:
+    id: "btn_Clear all watchlist"
+- waitForAnimationToEnd
+- takeScreenshot: "13-clear-watchlist-prompt"
+- assertVisible: "Clear all watchlist"
+- tapOn:
+    id: "btn_Yes"
+- waitForAnimationToEnd
+- assertVisible: "Your watchlist is empty!"
+- takeScreenshot: "14-watchlist-cleared"
+- tapOn:
+    id: "btn_back"
+- waitForAnimationToEnd
+- takeScreenshot: "15-back-from-watchlist"
+
+# Step 6 — Account section validation
+- assertVisible: "Share"
+- assertVisible: "Rate Us"
+- assertVisible: "Support"
+- takeScreenshot: "16-account-options-validated"
+
+# Step 7 — Support
+- tapOn: "Support"
+- waitForAnimationToEnd
+- takeScreenshot: "17-support-opened"
+- assertVisible: "How can we help you?"
+- assertVisible:
+    text: "Help Centre"
+    index: 0
+- assertVisible:
+    text: "Chat with us"
+    index: 0
+- takeScreenshot: "18-support-validated"
+- tapOn:
+    text: "Help Centre"
+    index: 0
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+- takeScreenshot: "19-help-centre-opened"
+- assertVisible: "Help Center"
+- takeScreenshot: "20-help-centre-validated"
+- tapOn: "Close tab"
+- waitForAnimationToEnd
+- takeScreenshot: "21-help-centre-closed"
+
+# Step 8 — Logout
+- tapOn: "Settings"
+- waitForAnimationToEnd
+- tapOn: "Logout"
+- waitForAnimationToEnd
+- assertVisible: "Are you sure you want to logout?"
+- takeScreenshot: "22-logout-confirmation"
+- tapOn: "Logout"
+- waitForAnimationToEnd
+- takeScreenshot: "23-logged-out"
+
+- stopApp

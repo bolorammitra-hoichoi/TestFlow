@@ -1,0 +1,521 @@
+appId: com.viewlift.hoichoi
+---
+# Step 1 — Launch
+- launchApp
+- waitForAnimationToEnd
+- runFlow: startup-check.yaml
+- takeScreenshot: "01-app-launched"
+
+# Step 2 — Movies section + categories
+- tapOn: "Movies"
+- waitForAnimationToEnd
+- takeScreenshot: "02-movies-section"
+- tapOn: "All categories"
+- waitForAnimationToEnd
+- takeScreenshot: "03-categories-opened"
+- assertVisible: "Action"
+- assertVisible: "Drama"
+- assertVisible: "Comedy"
+- assertVisible: "Horror"
+- assertVisible: "Family"
+- assertVisible: "Romantic"
+- assertVisible: "Thriller"
+- assertVisible: "Free"
+- takeScreenshot: "04-categories-validated"
+- tapOn: "Close"
+- waitForAnimationToEnd
+
+# Step 3 — Filter by Free
+- tapOn: "All categories"
+- waitForAnimationToEnd
+- tapOn:
+    id: "sub_tab_Free"
+- waitForAnimationToEnd
+- takeScreenshot: "05-free-filter-applied"
+
+# Step 4 — Swipe gestures
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: RIGHT
+- swipe:
+    direction: LEFT
+- swipe:
+    direction: LEFT
+- swipe:
+    direction: UP
+- swipe:
+    direction: DOWN
+- takeScreenshot: "06-swipe-gestures-done"
+
+# Step 5 — Watch Now (subscription prompt)
+- tapOn: "Watch Now"
+- waitForAnimationToEnd
+- takeScreenshot: "07-watch-now-tapped"
+- tapOn:
+    id: "BottomSheetTopBarClose"
+- waitForAnimationToEnd
+
+# Step 6 — Content interaction
+- swipe:
+    direction: UP
+- takeScreenshot: "08-swiped-up"
+- tapOn:
+    point: "48%,50%"
+- waitForAnimationToEnd
+- tapOn:
+    point: "77%,72%"
+- waitForAnimationToEnd
+- tapOn:
+    id: "com.android.systemui:id/back"
+- waitForAnimationToEnd
+- takeScreenshot: "09-back-from-content"
+
+# ── Return to home ──
+- runFlow:
+    when:
+      notVisible: "App Logo"
+    commands:
+      - tapOn:
+          id: "com.android.systemui:id/back"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            notVisible: "App Logo"
+          commands:
+            - tapOn:
+                id: "com.android.systemui:id/back"
+            - waitForAnimationToEnd
+            - runFlow:
+                when:
+                  notVisible: "App Logo"
+                commands:
+                  - tapOn:
+                      id: "com.android.systemui:id/back"
+                  - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible:
+        id: "unselected_Home"
+    commands:
+      - tapOn:
+          id: "unselected_Home"
+      - waitForAnimationToEnd
+
+# Step 7 — Tab navigation: Movies, Shows, FM, Hindi, Free
+- tapOn: "Movies"
+- waitForAnimationToEnd
+- takeScreenshot: "10-movies-tab"
+- tapOn:
+    id: "unselected_Home"
+- waitForAnimationToEnd
+- tapOn: "Shows"
+- waitForAnimationToEnd
+- takeScreenshot: "11-shows-tab"
+- tapOn:
+    id: "unselected_Home"
+- waitForAnimationToEnd
+- tapOn: "FM"
+- waitForAnimationToEnd
+- takeScreenshot: "12-fm-tab"
+- tapOn:
+    id: "unselected_Home"
+- waitForAnimationToEnd
+- tapOn: "Hindi"
+- waitForAnimationToEnd
+- takeScreenshot: "13-hindi-tab"
+- tapOn:
+    id: "unselected_Home"
+- waitForAnimationToEnd
+- tapOn: "Free"
+- waitForAnimationToEnd
+- takeScreenshot: "14-free-tab"
+- tapOn:
+    id: "unselected_Home"
+- waitForAnimationToEnd
+
+# ── Return to home ──
+- runFlow:
+    when:
+      notVisible: "App Logo"
+    commands:
+      - tapOn:
+          id: "com.android.systemui:id/back"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            notVisible: "App Logo"
+          commands:
+            - tapOn:
+                id: "com.android.systemui:id/back"
+            - waitForAnimationToEnd
+            - runFlow:
+                when:
+                  notVisible: "App Logo"
+                commands:
+                  - tapOn:
+                      id: "com.android.systemui:id/back"
+                  - waitForAnimationToEnd
+
+# Step 8 — FM / Audio player
+- tapOn: "FM"
+- waitForAnimationToEnd
+- takeScreenshot: "11-fm-section"
+- tapOn:
+    id: "btn_Play Now"
+- waitForAnimationToEnd
+- takeScreenshot: "12-fm-player-opened"
+- assertVisible: "Episodes List"
+- takeScreenshot: "13-episodes-list-visible"
+
+# Step 9 — Playback speed
+- tapOn: "Playback Speed"
+- waitForAnimationToEnd
+- assertVisible: "1.0x"
+- assertVisible: "1.00x"
+- takeScreenshot: "14a-speed-default-1x"
+- tapOn: "1.25x"
+- waitForAnimationToEnd
+- assertVisible: "1.25x"
+- assertVisible: "1.25x"
+- takeScreenshot: "14b-speed-1.25x-confirmed"
+- tapOn: "1.5x"
+- waitForAnimationToEnd
+- assertVisible: "1.5x"
+- assertVisible: "1.50x"
+- takeScreenshot: "14c-speed-1.5x-confirmed"
+- tapOn: "Playback Speed"
+- waitForAnimationToEnd
+- tapOn: "0.5x"
+- waitForAnimationToEnd
+- assertVisible: "0.50x"
+- takeScreenshot: "14d-speed-0.5x-confirmed"
+- tapOn: "Playback Speed"
+- waitForAnimationToEnd
+- tapOn: "1.0x"
+- waitForAnimationToEnd
+- takeScreenshot: "14e-speed-reset-to-1x"
+
+# Step 10 — Sleep timer
+- tapOn:
+    point: "50%,32%"
+- waitForAnimationToEnd
+- tapOn: "Sleep Timer"
+- waitForAnimationToEnd
+- assertVisible: "0 min"
+- takeScreenshot: "15-sleep-timer-opened"
+- tapOn: "5 m"
+- waitForAnimationToEnd
+- assertVisible: "5 m"
+- assertVisible: "Cancel Sleep Timer"
+- takeScreenshot: "16-sleep-timer-set-confirmed"
+- tapOn: "Close sheet"
+- waitForAnimationToEnd
+
+# Step 11 — Share
+- tapOn: "Share"
+- waitForAnimationToEnd
+- takeScreenshot: "17-share-opened"
+- tapOn: "Cancel"
+- waitForAnimationToEnd
+
+# Step 12 — Episodes list
+- tapOn: "Episodes List"
+- waitForAnimationToEnd
+- assertVisible: "Episodes"
+- assertVisible: "Additional Info"
+- takeScreenshot: "18-episodes-list-validated"
+- tapOn: "Close sheet"
+- waitForAnimationToEnd
+
+# Step 13 — Play/Pause toggle
+- assertVisible: "Pause"
+- takeScreenshot: "19a-playing-confirmed"
+- tapOn: "Pause"
+- waitForAnimationToEnd
+- assertVisible: "Play"
+- takeScreenshot: "19b-paused-confirmed"
+- tapOn: "Play"
+- waitForAnimationToEnd
+- assertVisible: "Pause"
+- takeScreenshot: "20-playing-again-confirmed"
+
+# Step 14 — Drag handle
+- tapOn:
+    point: "88%,6%"
+- waitForAnimationToEnd
+- tapOn: "Drag handle"
+- waitForAnimationToEnd
+- assertVisible: "Drag handle"
+- takeScreenshot: "21-drag-handle-validated"
+- tapOn:
+    point: "50%,22%"
+- waitForAnimationToEnd
+- tapOn:
+    point: "10%,6%"
+- waitForAnimationToEnd
+
+# ── Return to home ──
+- runFlow:
+    when:
+      notVisible: "App Logo"
+    commands:
+      - tapOn:
+          id: "com.android.systemui:id/back"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            notVisible: "App Logo"
+          commands:
+            - tapOn:
+                id: "com.android.systemui:id/back"
+            - waitForAnimationToEnd
+            - runFlow:
+                when:
+                  notVisible: "App Logo"
+                commands:
+                  - tapOn:
+                      id: "com.android.systemui:id/back"
+                  - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible:
+        id: "unselected_Home"
+    commands:
+      - tapOn:
+          id: "unselected_Home"
+      - waitForAnimationToEnd
+
+# Step 15 — Hindi tab
+- tapOn: "Hindi"
+- waitForAnimationToEnd
+- takeScreenshot: "22-hindi-tab"
+- tapOn:
+    id: "unselected_Home"
+- waitForAnimationToEnd
+
+# ── Return to home ──
+- runFlow:
+    when:
+      notVisible: "App Logo"
+    commands:
+      - tapOn:
+          id: "com.android.systemui:id/back"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            notVisible: "App Logo"
+          commands:
+            - tapOn:
+                id: "com.android.systemui:id/back"
+            - waitForAnimationToEnd
+            - runFlow:
+                when:
+                  notVisible: "App Logo"
+                commands:
+                  - tapOn:
+                      id: "com.android.systemui:id/back"
+                  - waitForAnimationToEnd
+
+# Step 16 — Subscribe flow
+- tapOn: "Subscribe"
+- waitForAnimationToEnd
+- assertVisible: "Choose Your Plan"
+- takeScreenshot: "23-subscription-page"
+- tapOn: "arrow back"
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      notVisible: "App Logo"
+    commands:
+      - tapOn:
+          id: "com.android.systemui:id/back"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            notVisible: "App Logo"
+          commands:
+            - tapOn:
+                id: "com.android.systemui:id/back"
+            - waitForAnimationToEnd
+            - runFlow:
+                when:
+                  notVisible: "App Logo"
+                commands:
+                  - tapOn:
+                      id: "com.android.systemui:id/back"
+                  - waitForAnimationToEnd
+- assertVisible: "App Logo"
+- takeScreenshot: "24-back-from-subscribe"
+
+# ── Return to home ──
+- runFlow:
+    when:
+      notVisible: "App Logo"
+    commands:
+      - tapOn:
+          id: "com.android.systemui:id/back"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            notVisible: "App Logo"
+          commands:
+            - tapOn:
+                id: "com.android.systemui:id/back"
+            - waitForAnimationToEnd
+            - runFlow:
+                when:
+                  notVisible: "App Logo"
+                commands:
+                  - tapOn:
+                      id: "com.android.systemui:id/back"
+                  - waitForAnimationToEnd
+
+# Step 17 — Cast icon
+- tapOn: "Cast icon"
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "No devices found"
+    commands:
+      - assertVisible: "No devices found"
+      - takeScreenshot: "25-cast-no-devices"
+- runFlow:
+    when:
+      visible: "Available Devices"
+    commands:
+      - assertVisible: "Available Devices"
+      - takeScreenshot: "25-cast-available-devices"
+- assertVisible: "Can't find your device?"
+- assertVisible:
+    id: "BottomSheetTopBarClose"
+- takeScreenshot: "25-cast-validated"
+- tapOn: "Back Icon"
+- waitForAnimationToEnd
+
+# ── Return to home ──
+- runFlow:
+    when:
+      notVisible: "App Logo"
+    commands:
+      - tapOn:
+          id: "com.android.systemui:id/back"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            notVisible: "App Logo"
+          commands:
+            - tapOn:
+                id: "com.android.systemui:id/back"
+            - waitForAnimationToEnd
+            - runFlow:
+                when:
+                  notVisible: "App Logo"
+                commands:
+                  - tapOn:
+                      id: "com.android.systemui:id/back"
+                  - waitForAnimationToEnd
+
+# Step 18 — Watch Now subscription prompt
+- tapOn:
+    id: "btn_Watch Now"
+- waitForAnimationToEnd
+- assertVisible: "Choose Your Plan"
+- takeScreenshot: "26-choose-plan-validated"
+- tapOn: "arrow back"
+- waitForAnimationToEnd
+
+# ── Return to home ──
+- runFlow:
+    when:
+      notVisible: "App Logo"
+    commands:
+      - tapOn:
+          id: "com.android.systemui:id/back"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            notVisible: "App Logo"
+          commands:
+            - tapOn:
+                id: "com.android.systemui:id/back"
+            - waitForAnimationToEnd
+            - runFlow:
+                when:
+                  notVisible: "App Logo"
+                commands:
+                  - tapOn:
+                      id: "com.android.systemui:id/back"
+                  - waitForAnimationToEnd
+
+# Step 19 — Video playback wait
+- tapOn:
+    point: "48%,83%"
+- waitForAnimationToEnd
+- takeScreenshot: "27-video-started"
+- extendedWaitUntil:
+    notVisible: "Trailer"
+    timeout: 540000
+- assertVisible:
+    id: "btn_replay"
+- tapOn: "Close"
+- takeScreenshot: "28-video-completed"
+
+# Step 20 — Bottom nav validation
+- runFlow:
+    when:
+      notVisible: "App Logo"
+    commands:
+      - tapOn:
+          id: "com.android.systemui:id/back"
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            notVisible: "App Logo"
+          commands:
+            - tapOn:
+                id: "com.android.systemui:id/back"
+            - waitForAnimationToEnd
+            - runFlow:
+                when:
+                  notVisible: "App Logo"
+                commands:
+                  - tapOn:
+                      id: "com.android.systemui:id/back"
+                  - waitForAnimationToEnd
+- assertVisible: "App Logo"
+- takeScreenshot: "29-app-logo-visible"
+- tapOn: "Search"
+- waitForAnimationToEnd
+- takeScreenshot: "30-search-tab"
+- tapOn: "Downloads"
+- waitForAnimationToEnd
+- takeScreenshot: "31-downloads-tab"
+- tapOn: "Upcoming"
+- waitForAnimationToEnd
+- takeScreenshot: "32-upcoming-tab"
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: DOWN
+- takeScreenshot: "33-upcoming-scrolled"
+
+# Step 21 — Account validation (logged out)
+- tapOn: "Account"
+- waitForAnimationToEnd
+- assertVisible: "Subscribe to"
+- assertVisible: "hoichoi Premium plans"
+- assertVisible: "Subscribe"
+- takeScreenshot: "34-account-logged-out-validated"
+
+- stopApp

@@ -1,0 +1,53 @@
+appId: com.viewlift.hoichoi
+---
+- launchApp
+- waitForAnimationToEnd
+- runFlow: startup-check.yaml
+- tapOn: "Account"
+- waitForAnimationToEnd
+- takeScreenshot: "01-account-page-english"
+- assertVisible: "Login / Sign Up"
+- assertVisible: "Subscribe"
+- assertVisible: "Share"
+- assertVisible: "Support"
+- takeScreenshot: "02-account-options-validated"
+
+- tapOn:
+    point: "91%,9%"
+- waitForAnimationToEnd
+- takeScreenshot: "03-language-selection-opened"
+- assertVisible: "Language Selection"
+- assertVisible: "English"
+- assertVisible: "বাং লা"
+
+- tapOn: "বাং লা"
+- takeScreenshot: "04-bangla-selected"
+- tapOn: "Save Settings"
+- waitForAnimationToEnd
+- takeScreenshot: "05-app-in-bengali"
+
+- tapOn:
+    text: "অকাউন্ট"
+    index: 0
+- waitForAnimationToEnd
+- takeScreenshot: "06-account-in-bengali"
+
+- tapOn:
+    point: "91%,9%"
+- waitForAnimationToEnd
+- takeScreenshot: "07-language-selection-in-bengali"
+- assertVisible: "ভাষা  নির্বা চন"
+
+- tapOn: "English"
+- takeScreenshot: "08-english-selected"
+- tapOn: "সেটিং স সেভ করুন"
+- waitForAnimationToEnd
+- takeScreenshot: "09-app-back-to-english"
+
+- tapOn:
+    text: "Account"
+    index: 0
+- waitForAnimationToEnd
+- assertVisible: "Login / Sign Up"
+- takeScreenshot: "10-account-back-in-english"
+- stopApp

@@ -1,0 +1,57 @@
+appId: com.viewlift.hoichoi
+---
+# Handle Allow popup (notification permission)
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+      - waitForAnimationToEnd
+
+# Handle Close popup
+- runFlow:
+    when:
+      visible: "Close"
+    commands:
+      - tapOn: "Close"
+      - waitForAnimationToEnd
+
+# Handle Later popup
+- runFlow:
+    when:
+      visible: "Later"
+    commands:
+      - tapOn: "Later"
+      - waitForAnimationToEnd
+
+# Check if Home is visible, if not kill and relaunch
+- runFlow:
+    when:
+      notVisible:
+        text: "Home"
+        index: 0
+    commands:
+      - stopApp
+      - launchApp
+      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            visible: "Allow"
+          commands:
+            - tapOn: "Allow"
+            - waitForAnimationToEnd
+      - runFlow:
+          when:
+            visible: "Close"
+          commands:
+            - tapOn: "Close"
+            - waitForAnimationToEnd
+      - runFlow:
+          when:
+            visible: "Later"
+          commands:
+            - tapOn: "Later"
+            - waitForAnimationToEnd
+      - assertVisible:
+          text: "Home"
+          index: 0

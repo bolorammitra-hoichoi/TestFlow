@@ -1,0 +1,81 @@
+// lib/api.js — thin HTTP client for the TestFlow backend. The agent never
+// talks to Firebase directly; every write goes through these authenticated
+// calls, same trust model as the browser dashboard.
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+const SESSION_PATH = path.join(os.homedir(), '.testflow', 'session.json');
+let token = null;
+
+function loadCachedSession() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(SESSION_PATH, 'utf8'));
+    if (raw && raw.token) token = raw.token;
+  } catch (e) { /* no cached session yet */ }
+}
+
+function cacheSession(t) {
+  token = t;
+  fs.mkdirSync(path.dirname(SESSION_PATH), { recursive: true });
+  fs.writeFileSync(SESSION_PATH, JSON.stringify({ token: t }), 'utf8');
+}
+
+function baseUrl() {
+  const url = process.env.TESTFLOW_API_URL;
+  if (!url) throw new Error('TESTFLOW_API_URL is not set — copy .env.example to .env and fill it in.');
+  return url.replace(/\/+$/, '');
+}
+
+async function call(pathname, { method = 'GET', body, auth = true } = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (auth) {
+    if (!token) throw new Error('Not logged in yet.');
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${baseUrl()}${pathname}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `${method} ${pathname} failed (${res.status})`);
+  return data;
+}
+
+async function login() {
+  loadCachedSession();
+  const email = process.env.TESTFLOW_EMAIL;
+  const password = process.env.TESTFLOW_PASSWORD;
+  if (!email || !password) throw new Error('TESTFLOW_EMAIL / TESTFLOW_PASSWORD are not set in .env');
+
+  const data = await call('/api/auth', { method: 'POST', auth: false, body: { action: 'login', email, password } });
+  cacheSession(data.token);
+  if (data.mustChange) {
+    console.warn('[testflow] Using the shared default password — set a personal one from the dashboard soon.');
+  }
+  return data;
+}
+
+async function heartbeat(payload) {
+  return call('/api/agents', { method: 'POST', body: payload });
+}
+
+async function startRun(runId, body) {
+  return call(`/api/runs/${runId}`, { method: 'PATCH', body: { action: 'start', ...body } });
+}
+
+async function completeRun(runId, tcResults) {
+  return call(`/api/runs/${runId}`, { method: 'PATCH', body: { action: 'complete', tcResults } });
+}
+
+async function postLogs(runId, tcId, lines) {
+  if (!lines.length) return;
+  return call(`/api/runs/${runId}/logs`, { method: 'POST', body: { tcId, lines } });
+}
+
+async function postScreenshot(runId, tcId, name, dataBase64) {
+  return call(`/api/runs/${runId}/screenshot`, { method: 'POST', body: { tcId, name, dataBase64 } });
+}
+
+module.exports = { login, heartbeat, startRun, completeRun, postLogs, postScreenshot };

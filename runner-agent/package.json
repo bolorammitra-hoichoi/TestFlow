@@ -1,0 +1,13 @@
+{
+  "name": "testflow-runner-agent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local background process a TestFlow tester runs on their own PC/Mac — detects ADB/idb devices, executes Maestro flows, and reports everything back to the TestFlow API. Never holds Firebase credentials.",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
