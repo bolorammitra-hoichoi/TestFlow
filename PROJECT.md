@@ -55,14 +55,27 @@ Phase 1 (scaffold) built and live: GitHub repo, Vercel project
 (`hoichoi-cx/test-flow`), Firebase project (`testflow-9ebcf`, Firestore
 enabled), `SESSION_SECRET`/`DEFAULT_PASSWORD` env vars set. All 5 API
 functions (`auth`, `agents`, `runs`, `runs/[id]`, `runs/[id]/logs` —
-screenshot upload was removed along with Storage), runner agent, dashboard,
-and QAForge's existing flows moved into
-`flows/hoichoi/android/v-current/` (rename that folder to the actual hoichoi
-build version it was tested against).
+screenshot upload was removed along with Storage), runner agent, and a
+dashboard matching the Claude Design handoff (`design_handoff_testflow_qa_dashboard`).
+
+**Test suite history — important, easy to get wrong:** the flows QAForge
+originally wrote were tested against hoichoi Android **v3.1.36** ("common
+UI, first build" — now deprecated), and live at
+`flows/hoichoi/android/3.1.36/`. There is currently **no flow suite for the
+actual current hoichoi Android build** — those need to be authored fresh.
+This isn't optional busywork: Maestro YAML is hardcoded to specific element
+text/ids/coordinates, so even a small UI change between 3.1.36 and today
+will silently break these old flows if run against a current build. Do not
+reuse the 3.1.36 files by just renaming the folder — write new ones against
+the real current UI (the Maestro MCP tools — `list_devices`,
+`inspect_screen`, `run` — are available for this). Once written, they go in
+a new `flows/hoichoi/android/{real-version-number}/` folder.
 
 **Not yet done / needs a real deploy to verify:**
 - Set `FIREBASE_SERVICE_ACCOUNT_B64` in Vercel from `testflow-9ebcf`'s
   service account, then do a real end-to-end run against a connected phone.
+- Author flows for the current hoichoi Android build (see above) — 3.1.36 is
+  the only version with runnable flows right now.
 - iOS support in the runner agent (idb/simctl) — needs a Mac, materially more
   work than Android, not a bolt-on.
 - sooper's flows — none exist yet; same `flows/sooper/{platform}/{version}/`
