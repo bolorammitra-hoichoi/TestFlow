@@ -68,18 +68,19 @@ async function executeRun(run, connectedDevices) {
   const packageId = (APP_PACKAGE_IDS[run.app] || {})[run.platform] || null;
   const buildNumber = device && run.platform === 'android' ? adb.versionName(device.serial, packageId) : null;
 
-  console.log(`[testflow] starting run ${run.id}: ${run.app}/${run.platform}/${run.version}`);
-  await api.startRun(run.id, { buildNumber, device });
-
   const appManifest = manifest.scan(REPO_DIR).find(
     (m) => m.app === run.app && m.platform === run.platform && m.version === run.version
   );
   const tcIds = run.tcIds && run.tcIds.length ? run.tcIds : (appManifest ? appManifest.tcIds : []);
 
+  console.log(`[testflow] starting run ${run.id}: ${run.app}/${run.platform}/${run.version}`);
+  await api.startRun(run.id, { buildNumber, device, totalTcs: tcIds.length });
+
   const tcResults = [];
   for (const tcId of tcIds) {
     const flowPath = manifest.resolveFlow(REPO_DIR, run.app, run.platform, run.version, tcId);
     const screenshotDir = path.join(os.tmpdir(), 'testflow', run.id, tcId);
+    await api.tcUpdate(run.id, tcId, tcId, 'running').catch((e) => console.error('[testflow] tc-update (running) failed:', e.message));
 
     let logBuffer = [];
     const flushLogs = () => {
@@ -112,6 +113,7 @@ async function executeRun(run, connectedDevices) {
       startedAt, finishedAt: Date.now(),
       errorMessage: result.errorMessage, screenshots,
     });
+    await api.tcUpdate(run.id, tcId, tcId, result.status).catch((e) => console.error('[testflow] tc-update (done) failed:', e.message));
     console.log(`[testflow] ${tcId}: ${result.status}`);
   }
 

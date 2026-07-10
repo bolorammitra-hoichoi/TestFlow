@@ -39,7 +39,27 @@ module.exports = async (req, res) => {
           startedAt: admin.firestore.FieldValue.serverTimestamp(),
           buildNumber: body.buildNumber || null,
           device: body.device || null,
+          totalTcs: body.totalTcs || 0,
+          tcSummary: [],
         });
+        return res.status(200).json({ ok: true });
+      }
+
+      // Agent reports one TC starting or finishing, so the dashboard can show
+      // real per-TC progress during a run instead of only at the very end.
+      // Superseded by the full tcResults doc once 'complete' runs.
+      if (action === 'tc-update') {
+        const { tcId, name, status } = body;
+        if (!tcId) return res.status(400).json({ error: 'tcId is required.' });
+
+        await ref.collection('tcResults').doc(tcId).set({ name, status }, { merge: true });
+
+        const snap = await ref.get();
+        const tcSummary = Array.isArray(snap.data().tcSummary) ? snap.data().tcSummary.slice() : [];
+        const idx = tcSummary.findIndex((t) => t.tcId === tcId);
+        const entry = { tcId, name, status, flagCount: 0 };
+        if (idx === -1) tcSummary.push(entry); else tcSummary[idx] = entry;
+        await ref.update({ tcSummary });
         return res.status(200).json({ ok: true });
       }
 

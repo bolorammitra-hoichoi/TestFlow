@@ -65,6 +65,10 @@ async function startRun(runId, body) {
   return call(`/api/runs/${runId}`, { method: 'PATCH', body: { action: 'start', ...body } });
 }
 
+async function tcUpdate(runId, tcId, name, status) {
+  return call(`/api/runs/${runId}`, { method: 'PATCH', body: { action: 'tc-update', tcId, name, status } });
+}
+
 async function completeRun(runId, tcResults) {
   return call(`/api/runs/${runId}`, { method: 'PATCH', body: { action: 'complete', tcResults } });
 }
@@ -74,4 +78,4 @@ async function postLogs(runId, tcId, lines) {
   return call(`/api/runs/${runId}/logs`, { method: 'POST', body: { tcId, lines } });
 }
 
-module.exports = { login, heartbeat, startRun, completeRun, postLogs };
+module.exports = { login, heartbeat, startRun, tcUpdate, completeRun, postLogs };
