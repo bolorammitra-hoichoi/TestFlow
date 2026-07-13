@@ -20,11 +20,19 @@ function runFlow(flowPath, { serial, screenshotDir, onLine }) {
 
     let tail = [];
     const handleChunk = (buf) => {
-      for (const line of buf.toString('utf8').split('\n')) {
-        if (!line) continue;
-        tail.push(line);
+      // Maestro's CLI output is meant for a terminal: it uses ANSI escape
+      // codes (bold/color) and bare \r to redraw progress in place. Neither
+      // means anything once dumped into a stored log line, so strip both —
+      // otherwise they render as literal garbage/overlap in the browser.
+      const clean = buf.toString('utf8')
+        .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+      for (const line of clean.split(/\r\n|\r|\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        tail.push(trimmed);
         if (tail.length > 20) tail.shift();
-        onLine(line);
+        onLine(trimmed);
       }
     };
     child.stdout.on('data', handleChunk);
