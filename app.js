@@ -92,7 +92,9 @@
     const name = m[2].replace(/-/g, ' ');
     return { id: m[1], name: name.charAt(0).toUpperCase() + name.slice(1) };
   }
-  function isAgentOnline(a) { return Date.now() - toMillis(a.lastHeartbeatAt) < 30000; }
+  // Agent heartbeats every ~10s; 45s gives a few missed/delayed beats of
+  // slack before flagging offline, instead of flickering on ordinary jitter.
+  function isAgentOnline(a) { return Date.now() - toMillis(a.lastHeartbeatAt) < 45000; }
 
   // ── icons (ported from the design handoff's inline SVGs) ────────────────
   const ICON = {
