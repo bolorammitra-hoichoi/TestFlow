@@ -61,21 +61,24 @@ dashboard matching the Claude Design handoff (`design_handoff_testflow_qa_dashbo
 **Test suite history — important, easy to get wrong:** the flows QAForge
 originally wrote were tested against hoichoi Android **v3.1.36** ("common
 UI, first build" — now deprecated), and live at
-`flows/hoichoi/android/3.1.36/`. There is currently **no flow suite for the
-actual current hoichoi Android build** — those need to be authored fresh.
-This isn't optional busywork: Maestro YAML is hardcoded to specific element
-text/ids/coordinates, so even a small UI change between 3.1.36 and today
-will silently break these old flows if run against a current build. Do not
-reuse the 3.1.36 files by just renaming the folder — write new ones against
-the real current UI (the Maestro MCP tools — `list_devices`,
-`inspect_screen`, `run` — are available for this). Once written, they go in
-a new `flows/hoichoi/android/{real-version-number}/` folder.
+`flows/hoichoi/android/3.1.36/`. Do not reuse those files for a current build
+by just renaming the folder — Maestro YAML is hardcoded to specific element
+text/ids/coordinates, so even a small UI change silently breaks an old flow.
+`flows/hoichoi/android/4.0.2/` now has a real, freshly-authored **TC-01**
+(`TC-01-app-overview-navigation-search-login-language-settings.yaml`),
+written directly against that build's actual UI — not yet run end-to-end
+through the website (that needs the runner agent live, see below). TC-02
+onward for 4.0.2 still need authoring, same as the rest of the suite.
 
 **Not yet done / needs a real deploy to verify:**
+- Get the runner agent (`runner-agent/`) actually running against a
+  connected phone and confirm a real run flows through end-to-end: website
+  → agent → device → website. This is the last missing piece before "connect
+  your phone, run from the site" is real rather than theoretical.
 - Set `FIREBASE_SERVICE_ACCOUNT_B64` in Vercel from `testflow-9ebcf`'s
-  service account, then do a real end-to-end run against a connected phone.
-- Author flows for the current hoichoi Android build (see above) — 3.1.36 is
-  the only version with runnable flows right now.
+  service account if not already done.
+- Finish authoring TC-02 through TC-08 for 4.0.2 (or however many end up
+  making sense for the current UI).
 - iOS support in the runner agent (idb/simctl) — needs a Mac, materially more
   work than Android, not a bolt-on.
 - sooper's flows — none exist yet; same `flows/sooper/{platform}/{version}/`
