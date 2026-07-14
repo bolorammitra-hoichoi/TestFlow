@@ -71,25 +71,35 @@ through the website (that needs the runner agent live, see below). TC-02
 onward for 4.0.2 still need authoring, same as the rest of the suite.
 
 **Not yet done / needs a real deploy to verify:**
-- Get the runner agent (`runner-agent/`) actually running against a
-  connected phone and confirm a real run flows through end-to-end: website
-  → agent → device → website. This is the last missing piece before "connect
-  your phone, run from the site" is real rather than theoretical.
-- Set `FIREBASE_SERVICE_ACCOUNT_B64` in Vercel from `testflow-9ebcf`'s
-  service account if not already done.
 - Finish authoring TC-02 through TC-08 for 4.0.2 (or however many end up
-  making sense for the current UI).
+  making sense for the current UI). TC-01 exists and passes/fails for real.
 - iOS support in the runner agent (idb/simctl) — needs a Mac, materially more
   work than Android, not a bolt-on.
 - sooper's flows — none exist yet; same `flows/sooper/{platform}/{version}/`
   layout as hoichoi once authored. sooper's package id(s) also need filling
   into `runner-agent/agent.js`'s `APP_PACKAGE_IDS` map.
-- Packaging the runner agent as a background/tray process instead of a
-  terminal window a tester has to keep open.
-- Retry/rerun affordance for flaky Maestro runs.
+- Mac/Linux autostart for the runner agent (the Windows Task Scheduler
+  installer is done; other OSes still use `npm start` or a hand-rolled
+  launchd/systemd unit).
 - Maestro's stdout is streamed as the raw log for now — no structured
   per-step JUnit parsing yet; confirm the CLI's actual output format against
   a real run before building anything that depends on its exact shape.
+
+**Done and verified against the real device (as of the current build):**
+- End-to-end loop works: website → agent → OnePlus (`ef6f7c89`) → website,
+  with real pass/fail results and clean live logs.
+- Stop button cancels a run in ~1-2s and kills the whole Maestro process tree
+  (not just the `cmd.exe` wrapper) on Windows.
+- Rerun (failed-only default, or full suite) from any finished run.
+- Stuck-run handling: agent self-heals its own orphaned runs on restart, plus a
+  15-min passive staleness sweep; interrupted runs show `Cancelled`, never a
+  false `Failed`.
+- Runner agent runs as a **hidden Windows background process** via Task
+  Scheduler (`runner-agent/install-agent-autostart.ps1`): starts at logon,
+  survives reboots, and a 2-min repeating trigger auto-relaunches it within
+  ~2 min if it ever dies (crash-recovery verified by killing the process).
+  Deliberately at-logon in the user session, NOT a session-0 Windows Service,
+  because session 0 can't reliably see USB/ADB devices.
 
 ## Test Devices
 
