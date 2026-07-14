@@ -50,6 +50,12 @@
     if (state.token) headers.Authorization = `Bearer ${state.token}`;
     const res = await fetch(`/api/${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
     const data = await res.json().catch(() => ({}));
+    if (res.status === 401) {
+      // Session expired or invalid — drop straight back to login instead of
+      // stranding the user on a broken page with a dead token.
+      logout();
+      throw new Error('Session expired — signed you out, please sign in again.');
+    }
     if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
     return data;
   }
@@ -232,7 +238,8 @@
       state.agents = agentsData.agents || [];
       recentRuns = runsData.runs || [];
     } catch (err) {
-      document.getElementById('tf-body').innerHTML = `<div class="tf-page"><div class="tf-card tf-error">${escapeHtml(err.message)}</div></div>`;
+      const body = document.getElementById('tf-body');
+      if (body) body.innerHTML = `<div class="tf-page"><div class="tf-card tf-error">${escapeHtml(err.message)}</div></div>`;
       return;
     }
     state.recentRuns = recentRuns;
@@ -599,7 +606,8 @@
       const data = await api('runs?limit=200');
       runs = data.runs || [];
     } catch (err) {
-      document.getElementById('tf-body').innerHTML = `<div class="tf-page wide"><div class="tf-card tf-error">${escapeHtml(err.message)}</div></div>`;
+      const body = document.getElementById('tf-body');
+      if (body) body.innerHTML = `<div class="tf-page wide"><div class="tf-card tf-error">${escapeHtml(err.message)}</div></div>`;
       return;
     }
 
