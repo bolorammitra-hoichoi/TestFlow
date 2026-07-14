@@ -25,6 +25,12 @@ const REPO_DIR = process.env.TESTFLOW_REPO_DIR;
 const HEARTBEAT_INTERVAL_MS = Number(process.env.HEARTBEAT_INTERVAL_MS || 10000);
 
 let busy = false;
+let currentRunId = null;
+// Cancel handle for whichever Maestro child process is currently running, if
+// any — both the 10s heartbeat and the ~1s log-ping check for a cancellation
+// request and call this the moment they see one.
+let activeCancel = null;
+let cancelledCurrentRun = false;
 
 function gitPull() {
   if (!REPO_DIR) return;
@@ -48,8 +54,16 @@ async function tick() {
       connectedDevices,
       manifest: scannedManifest,
       idle: !busy,
+      currentRunId,
     });
     claimedRun = res.claimedRun;
+    // ~10s backstop for cancel detection, on top of the tighter ~1s check in
+    // the log-ping below — covers the gap between test cases, when no
+    // Maestro child is actively running to be pinged for.
+    if (res.cancelRequested && activeCancel) {
+      cancelledCurrentRun = true;
+      activeCancel();
+    }
   } catch (e) {
     console.error('[testflow] heartbeat failed:', e.message);
     return;
@@ -57,9 +71,11 @@ async function tick() {
 
   if (claimedRun && !busy) {
     busy = true;
+    currentRunId = claimedRun.id;
+    cancelledCurrentRun = false;
     executeRun(claimedRun, connectedDevices).catch((e) => {
       console.error('[testflow] run execution crashed:', e.message);
-    }).finally(() => { busy = false; });
+    }).finally(() => { busy = false; currentRunId = null; activeCancel = null; });
   }
 }
 
@@ -78,27 +94,41 @@ async function executeRun(run, connectedDevices) {
 
   const tcResults = [];
   for (const tcId of tcIds) {
+    if (cancelledCurrentRun) break;
+
     const flowPath = manifest.resolveFlow(REPO_DIR, run.app, run.platform, run.version, tcId);
     const screenshotDir = path.join(os.tmpdir(), 'testflow', run.id, tcId);
     await api.tcUpdate(run.id, tcId, tcId, 'running').catch((e) => console.error('[testflow] tc-update (running) failed:', e.message));
 
     let logBuffer = [];
+    // Fires unconditionally — even an empty batch — so cancellation is
+    // noticed within ~1s and lastContactAt stays fresh through a long silent
+    // Maestro wait (real waits up to 9 minutes exist in these flows).
     const flushLogs = () => {
-      if (!logBuffer.length) return;
       const toSend = logBuffer.map((line) => ({ line }));
       logBuffer = [];
-      api.postLogs(run.id, tcId, toSend).catch((e) => console.error('[testflow] log flush failed:', e.message));
+      api.postLogs(run.id, tcId, toSend).then((res) => {
+        if (res && res.cancelRequested && activeCancel) {
+          cancelledCurrentRun = true;
+          activeCancel();
+        }
+      }).catch((e) => console.error('[testflow] log flush failed:', e.message));
     };
     const flushInterval = setInterval(flushLogs, 1000);
 
     const startedAt = Date.now();
-    const result = await maestro.runFlow(flowPath, {
+    const { promise, cancel } = maestro.runFlow(flowPath, {
       serial: device ? device.serial : undefined,
       screenshotDir,
       onLine: (line) => { console.log(`[${tcId}] ${line}`); logBuffer.push(line); },
     });
+    activeCancel = cancel;
+    const result = await promise;
+    activeCancel = null;
     clearInterval(flushInterval);
     flushLogs();
+
+    if (result.status === 'cancelled') cancelledCurrentRun = true;
 
     // No Firebase Storage in v1 (see PROJECT.md) — screenshots stay on this
     // machine. Just record which ones exist and which are FLAG-prefixed, plus
@@ -117,7 +147,13 @@ async function executeRun(run, connectedDevices) {
     console.log(`[testflow] ${tcId}: ${result.status}`);
   }
 
-  await api.completeRun(run.id, tcResults);
+  // A cancelled run is already terminal server-side (the Cancel button set
+  // it immediately) — posting a completion here would be a harmless no-op
+  // at best (the transactional guard rejects it) but there's nothing useful
+  // to report, so skip it entirely.
+  if (!cancelledCurrentRun) {
+    await api.completeRun(run.id, tcResults);
+  }
   console.log(`[testflow] run ${run.id} complete`);
 }
 

@@ -1,5 +1,11 @@
 // api/runs/[id]/logs.js — POST batches of Maestro stdout lines (agent, ~1s
 // batches), GET polls for new lines since a cursor (dashboard, ~2s while running).
+//
+// The agent calls POST unconditionally every ~1s during execution, even with
+// an empty batch — this is the tight (~1s) side of cancel detection and it's
+// also what keeps lastContactAt fresh through a long silent Maestro wait (real
+// waits up to 9 minutes exist in these flows), so staleness detection doesn't
+// mistake "quiet" for "dead".
 const { admin, db } = require('../../../lib/firebase');
 const auth = require('../../../lib/auth');
 
@@ -24,17 +30,27 @@ module.exports = async (req, res) => {
       const body = req.body || {};
       const tcId = String(body.tcId || '');
       const lines = Array.isArray(body.lines) ? body.lines : [];
-      if (!lines.length) return res.status(200).json({ ok: true, written: 0 });
 
-      const batch = db.batch();
-      for (const line of lines) {
-        batch.set(logsRef.doc(), {
-          tcId, line: String(line.line || ''),
-          ts: admin.firestore.FieldValue.serverTimestamp(),
-        });
+      if (lines.length) {
+        const batch = db.batch();
+        for (const line of lines) {
+          batch.set(logsRef.doc(), {
+            tcId, line: String(line.line || ''),
+            ts: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+        await batch.commit();
       }
-      await batch.commit();
-      return res.status(200).json({ ok: true, written: lines.length });
+
+      const runRef = db.collection('runs').doc(runId);
+      const runSnap = await runRef.get();
+      let cancelRequested = false;
+      if (runSnap.exists) {
+        cancelRequested = !!runSnap.data().cancelRequested;
+        await runRef.update({ lastContactAt: admin.firestore.FieldValue.serverTimestamp() });
+      }
+
+      return res.status(200).json({ ok: true, written: lines.length, cancelRequested });
     }
 
     if (req.method === 'GET') {

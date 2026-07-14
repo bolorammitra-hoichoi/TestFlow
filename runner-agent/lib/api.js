@@ -73,8 +73,11 @@ async function completeRun(runId, tcResults) {
   return call(`/api/runs/${runId}`, { method: 'PATCH', body: { action: 'complete', tcResults } });
 }
 
+// Called unconditionally roughly every 1s during execution, even with an
+// empty batch — this is the tight side of cancel detection, and it's also
+// what keeps the run's lastContactAt fresh through a long silent Maestro
+// wait (real waits up to 9 minutes exist in these flows already).
 async function postLogs(runId, tcId, lines) {
-  if (!lines.length) return;
   return call(`/api/runs/${runId}/logs`, { method: 'POST', body: { tcId, lines } });
 }
 

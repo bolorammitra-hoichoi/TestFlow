@@ -120,6 +120,8 @@
     android: () => `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"></rect><path d="M9 22h6"></path></svg>`,
     ios: () => `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2.5"></rect><path d="M12 18h.01"></path></svg>`,
     chevron: () => `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>`,
+    stop: () => `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>`,
+    refresh: () => `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><path d="M21 3v6h-6"></path></svg>`,
     inbox: () => `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>`,
     runIcon: () => `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>`,
   };
@@ -467,16 +469,41 @@
     renderRunDetailBody();
   }
 
+  function lastLogLineFor(tcId) {
+    for (let i = state.activeLogs.length - 1; i >= 0; i--) {
+      if (state.activeLogs[i].tcId === tcId) return state.activeLogs[i].line;
+    }
+    return null;
+  }
+
   function runHeaderHtml(run) {
     const am = APP_META[run.app];
     const st = run.status;
-    const stText = { passed: 'Passed', failed: 'Failed', running: 'Running', claimed: 'Claimed', queued: 'Queued' }[st] || st;
+    let stText = { passed: 'Passed', failed: 'Failed', running: 'Running', claimed: 'Claimed', queued: 'Queued', cancelled: 'Cancelled' }[st] || st;
+    if (st === 'cancelled') {
+      if (run.failureReason === 'agent_restarted') stText = 'Cancelled — agent restarted';
+      else if (run.failureReason === 'stale_timeout') stText = 'Cancelled — timed out';
+      else stText = 'Cancelled by you';
+    }
     const durSec = runDurationSec(run);
     const tcSummary = run.tcSummary || [];
     const passCount = tcSummary.filter((t) => t.status === 'passed').length;
     const failCount = tcSummary.filter((t) => t.status === 'failed').length;
     const flagCount = tcSummary.reduce((a, t) => a + (t.flagCount || 0), 0);
     const meta = (k, v) => `<div><div class="tf-meta-k">${k}</div><div class="tf-meta-v">${v}</div></div>`;
+
+    const inFlight = ['queued', 'claimed', 'running'].includes(st);
+    const finished = ['passed', 'failed', 'cancelled'].includes(st);
+    const allTcIds = tcSummary.map((t) => t.tcId);
+    const failedTcIds = tcSummary.filter((t) => t.status !== 'passed').map((t) => t.tcId);
+    const actionsHtml = (inFlight || finished) ? `
+      <div class="tf-divider"></div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        ${inFlight ? `<button class="tf-btn-stop" data-action="cancel-run">${ICON.stop()}Stop</button>` : ''}
+        ${finished && failedTcIds.length ? `<button class="tf-btn-rerun" data-action="rerun-run" data-tcids="${escapeHtml(JSON.stringify(failedTcIds))}">${ICON.refresh()}Rerun failed (${failedTcIds.length})</button>` : ''}
+        ${finished ? `<button class="tf-btn-rerun secondary" data-action="rerun-run" data-tcids="${escapeHtml(JSON.stringify(allTcIds))}">${ICON.refresh()}Rerun all</button>` : ''}
+      </div>` : '';
+
     return `<div class="tf-run-header">
       <div class="tf-run-header-top">
         <span class="tf-app-tile lg" data-app="${run.app}">${am.glyph}</span>
@@ -495,6 +522,7 @@
         ${meta('Flagged', flagCount > 0 ? `<span style="color:var(--warn);">${flagCount}</span>` : '0')}
         ${meta('Requested', escapeHtml(fmtRelative(toMillis(run.requestedAt))))}
       </div>
+      ${actionsHtml}
     </div>`;
   }
 
@@ -572,10 +600,16 @@
         <div class="tf-card" style="padding:15px;">
           <div class="tf-sidebar-head"><div class="tf-eyebrow sm">Test cases</div><div style="font-family:var(--mono);font-size:11.5px;color:var(--tx3);">${doneCount}/${liveTcs.length}</div></div>
           <div class="tf-tc-progress-list">
-            ${liveTcs.map((t) => `<div class="tf-tc-progress-row ${t.status === 'running' ? 'running' : ''}">
-              ${tcStatusIcon(t.status)}<span class="tf-tc-id">${t.id}</span><span class="tf-tc-progress-name">${escapeHtml(t.name)}</span>
-              ${t.flagCount > 0 ? `<span class="tf-badge sm" data-st="flagged">${ICON.flag('currentColor', 10)} ${t.flagCount}</span>` : ''}
-            </div>`).join('')}
+            ${liveTcs.map((t) => {
+              const step = t.status === 'running' ? lastLogLineFor(t.tcId) : null;
+              return `<div>
+                <div class="tf-tc-progress-row ${t.status === 'running' ? 'running' : ''}">
+                  ${tcStatusIcon(t.status)}<span class="tf-tc-id">${t.id}</span><span class="tf-tc-progress-name">${escapeHtml(t.name)}</span>
+                  ${t.flagCount > 0 ? `<span class="tf-badge sm" data-st="flagged">${ICON.flag('currentColor', 10)} ${t.flagCount}</span>` : ''}
+                </div>
+                ${step ? `<div class="tf-current-step">${escapeHtml(step)}</div>` : ''}
+              </div>`;
+            }).join('')}
           </div>
         </div>
       </div>`;
@@ -593,6 +627,22 @@
     document.querySelectorAll('[data-nav]').forEach((el) => { el.onclick = () => { state.view = el.dataset.nav; if (state.pollTimer) clearInterval(state.pollTimer); render(); }; });
     document.querySelectorAll('[data-toggle-tc]').forEach((el) => {
       el.onclick = () => { const k = el.dataset.toggleTc; state.expanded[k] = !state.expanded[k]; renderRunDetailBody(); };
+    });
+    const cancelBtn = document.querySelector('[data-action="cancel-run"]');
+    if (cancelBtn) cancelBtn.onclick = async () => {
+      cancelBtn.disabled = true;
+      try { await api(`runs/${run.id}`, { method: 'PATCH', body: { action: 'cancel' } }); await refreshRunDetail(); }
+      catch (err) { alert(err.message); cancelBtn.disabled = false; }
+    };
+    document.querySelectorAll('[data-action="rerun-run"]').forEach((el) => {
+      el.onclick = async () => {
+        el.disabled = true;
+        try {
+          const tcIds = JSON.parse(el.dataset.tcids || '[]');
+          const data = await api('runs', { method: 'POST', body: { agentId: run.agentId, app: run.app, platform: run.platform, version: run.version, tcIds } });
+          openRun(data.runId, { live: true, pendingTcIds: tcIds });
+        } catch (err) { alert(err.message); el.disabled = false; }
+      };
     });
     const logBody = document.getElementById('log-body');
     if (logBody) logBody.scrollTop = logBody.scrollHeight;

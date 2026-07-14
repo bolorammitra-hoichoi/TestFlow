@@ -43,6 +43,7 @@ input, select, button { font-family: inherit; }
 [data-st="running"], [data-st="claimed"], [data-st="busy"] { --sf: var(--run); --sb: var(--run-w); }
 [data-st="flagged"], [data-st="warning"] { --sf: var(--warn); --sb: var(--warn-w); }
 [data-st="queued"], [data-st="offline"] { --sf: var(--gray); --sb: var(--gray-w); }
+[data-st="cancelled"] { --sf: var(--gray); --sb: var(--gray-w); }
 [data-app="hoichoi"] { --ac: var(--hoichoi); }
 [data-app="sooper"] { --ac: var(--sooper); }
 [data-lvl] { color: var(--tx2); }
@@ -222,6 +223,14 @@ input, select, button { font-family: inherit; }
 .tf-tc-icon.queued { border: 1.5px dashed var(--border-2); }
 .tf-tc-progress-name { font-size: 12px; color: var(--tx1); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tf-tc-progress-dur { font-family: var(--mono); font-size: 10.5px; color: var(--tx3); flex: none; }
+.tf-current-step { margin: 2px 0 5px 42px; font-family: var(--mono); font-size: 11px; color: var(--tx3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.tf-btn-stop, .tf-btn-rerun { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer; font-family: var(--ui); font-weight: 600; font-size: 13px; }
+.tf-btn-stop { background: var(--bad-w); color: var(--bad); }
+.tf-btn-stop:hover { background: rgba(248,81,73,.24); }
+.tf-btn-rerun { background: var(--accent); color: #fff; }
+.tf-btn-rerun.secondary { background: transparent; border: 1px solid var(--border-2); color: var(--tx2); }
+.tf-btn-stop:disabled, .tf-btn-rerun:disabled { opacity: .55; cursor: not-allowed; }
 
 .tf-flagged-banner { background: var(--warn-w); border: 1px solid rgba(210,153,34,.3); border-radius: 13px; padding: 16px 18px; margin-bottom: 18px; }
 .tf-flagged-head { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; flex-wrap: wrap; }
