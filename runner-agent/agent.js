@@ -153,8 +153,10 @@ async function executeRun(run, connectedDevices) {
   // to report, so skip it entirely.
   if (!cancelledCurrentRun) {
     await api.completeRun(run.id, tcResults);
+    console.log(`[testflow] run ${run.id} complete`);
+  } else {
+    console.log(`[testflow] run ${run.id} cancelled`);
   }
-  console.log(`[testflow] run ${run.id} complete`);
 }
 
 async function main() {

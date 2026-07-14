@@ -61,7 +61,11 @@
   }
 
   // ── helpers ──────────────────────────────────────────────────────────────
-  function escapeHtml(s) { return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+  // Escapes quotes too, not just &<> — needed wherever escaped content ends
+  // up inside an HTML attribute value (e.g. data-tcids="..." holding JSON,
+  // which itself contains literal " characters that would otherwise close
+  // the attribute early and corrupt the markup).
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   function toMillis(ts) {
     if (!ts) return 0;
     if (typeof ts === 'number') return ts;
