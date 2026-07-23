@@ -122,6 +122,17 @@ input, select, button { font-family: inherit; }
 .tf-live-poll { font-size: 11.5px; color: var(--tx3); display: flex; align-items: center; gap: 5px; }
 .tf-divider { height: 1px; background: var(--border); margin: 20px 0; }
 
+.tf-btn-refresh { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px;
+  border: 1px solid var(--border-2); background: var(--panel-3); color: var(--tx1);
+  font-family: var(--ui); font-weight: 600; font-size: 12.5px; cursor: pointer; }
+.tf-btn-refresh:hover { border-color: var(--accent); color: var(--accent); }
+.tf-btn-refresh:disabled { opacity: .7; cursor: default; }
+.tf-spin { display: inline-flex; animation: tf-rot 0.8s linear infinite; }
+@keyframes tf-rot { to { transform: rotate(360deg); } }
+.tf-device-note { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 9px 12px;
+  border-radius: 8px; background: var(--warn-w); border: 1px solid rgba(210,153,34,.3);
+  font-size: 12.5px; color: var(--tx2); }
+
 .tf-agent-list { display: flex; flex-direction: column; gap: 9px; }
 .tf-agent-row { display: flex; gap: 13px; padding: 13px 14px; border-radius: 11px; border: 1px solid var(--border); background: var(--panel-3); cursor: pointer; }
 .tf-agent-row.selected { border-color: var(--accent); background: var(--accent-weak); }

@@ -35,14 +35,17 @@ let cancelledCurrentRun = false;
 function gitPull() {
   if (!REPO_DIR) return;
   try {
-    execSync('git pull --ff-only', { cwd: REPO_DIR, stdio: 'ignore' });
+    // timeout-bounded: `git pull` runs synchronously and blocks the whole event
+    // loop (and therefore the heartbeat), so a hung/unreachable remote must not
+    // be able to freeze the agent indefinitely. On timeout it's killed and we
+    // just keep running the flows already on disk.
+    execSync('git pull --ff-only', { cwd: REPO_DIR, stdio: 'ignore', timeout: 20000 });
   } catch (e) {
-    console.warn('[testflow] git pull failed — running with whatever is on disk:', e.message);
+    console.warn('[testflow] git pull skipped/failed — using on-disk flows:', e.message);
   }
 }
 
 async function tick() {
-  gitPull();
   const connectedDevices = adb.listDevices();
   const scannedManifest = manifest.scan(REPO_DIR);
 
@@ -77,6 +80,11 @@ async function tick() {
       console.error('[testflow] run execution crashed:', e.message);
     }).finally(() => { busy = false; currentRunId = null; activeCancel = null; });
   }
+
+  // Refresh flows AFTER the heartbeat (so a slow pull never delays it and
+  // flickers us offline), and never mid-run — pulling then could swap the YAML
+  // out from under a running test. One-tick staleness on the manifest is fine.
+  if (!busy) gitPull();
 }
 
 async function executeRun(run, connectedDevices) {

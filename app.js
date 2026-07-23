@@ -20,6 +20,7 @@
     activeRun: null, activeTcResults: [], activeLogs: [], logsAfter: 0,
     pendingTcIds: null, isLiveView: false, pollTimer: null,
     expanded: {},
+    checkingDevices: false, deviceCheckNote: null,
     histSearch: '', fApp: 'all', fPlatform: 'all', fStatus: 'all',
   };
 
@@ -32,10 +33,14 @@
     localStorage.setItem('tf_email', email);
     localStorage.setItem('tf_must_change', mustChange ? '1' : '0');
   }
-  function logout() {
+  function logout(reason) {
     state.token = null; state.email = null; state.mustChange = false;
     localStorage.removeItem('tf_token'); localStorage.removeItem('tf_email'); localStorage.removeItem('tf_must_change');
     if (state.pollTimer) clearInterval(state.pollTimer);
+    // `reason` is a string shown on the login screen (e.g. session expired).
+    // Guard against being called as an event handler (onclick=logout would
+    // pass a DOM event) — only strings become the message.
+    state.error = (typeof reason === 'string') ? reason : null;
     render();
   }
   function toggleTheme() {
@@ -53,7 +58,7 @@
     if (res.status === 401) {
       // Session expired or invalid — drop straight back to login instead of
       // stranding the user on a broken page with a dead token.
-      logout();
+      logout('Your session expired — please sign in again.');
       throw new Error('Session expired — signed you out, please sign in again.');
     }
     if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
@@ -104,7 +109,31 @@
   }
   // Agent heartbeats every ~10s; 45s gives a few missed/delayed beats of
   // slack before flagging offline, instead of flickering on ordinary jitter.
-  function isAgentOnline(a) { return Date.now() - toMillis(a.lastHeartbeatAt) < 45000; }
+  // Prefer the SERVER-computed age (`lastHeartbeatAgeMs`) — the tester's own
+  // machine clock can be far off (we've seen ~50s skew), and comparing our
+  // local clock to a server timestamp would then flag a healthy agent offline.
+  // Fall back to the local calc only if the server didn't send an age.
+  function agentAgeMs(a) {
+    return (typeof a.lastHeartbeatAgeMs === 'number') ? a.lastHeartbeatAgeMs : (Date.now() - toMillis(a.lastHeartbeatAt));
+  }
+  function isAgentOnline(a) { return agentAgeMs(a) < 45000; }
+
+  // Decode the session token's expiry (payload is base64url JSON: {email,iat,exp}).
+  // Used to proactively kick the user to login the moment their session dies,
+  // so nobody keeps clicking around a "zombie" tab whose token is already dead.
+  function tokenExpMs(token) {
+    try {
+      let b64 = String(token).split('.')[0].replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4) b64 += '=';
+      const payload = JSON.parse(atob(b64));
+      return payload && payload.exp ? payload.exp * 1000 : 0;
+    } catch (e) { return 0; }
+  }
+  function isSessionDead() {
+    if (!state.token) return false; // not logged in is a separate state, not "dead"
+    const exp = tokenExpMs(state.token);
+    return exp > 0 && Date.now() >= exp;
+  }
 
   // ── icons (ported from the design handoff's inline SVGs) ────────────────
   const ICON = {
@@ -232,7 +261,7 @@
       el.onclick = () => { state.view = el.dataset.nav; if (state.pollTimer) clearInterval(state.pollTimer); render(); };
     });
     document.getElementById('theme-toggle').onclick = toggleTheme;
-    document.getElementById('signout').onclick = logout;
+    document.getElementById('signout').onclick = () => logout();
   }
 
   // ── Run Test ─────────────────────────────────────────────────────────────
@@ -282,7 +311,7 @@
           const busy = online && busyAgentIds.has(a.id);
           const selected = a.id === state.selAgentId && online;
           const badgeSt = !online ? 'offline' : (busy ? 'busy' : 'online');
-          const minsAgo = Math.max(0, Math.round((Date.now() - toMillis(a.lastHeartbeatAt)) / 60000));
+          const minsAgo = Math.max(0, Math.round(agentAgeMs(a) / 60000));
           const badgeText = !online ? `offline ${minsAgo}m ago` : (busy ? 'busy' : 'online · idle');
           return `<div class="tf-row-btn tf-agent-row ${selected ? 'selected' : ''} ${!online ? 'disabled' : ''}" data-agent="${a.id}">
             <div class="tf-agent-icon">${ICON.phone()}</div>
@@ -293,11 +322,13 @@
                 <span class="tf-badge sm" data-st="${badgeSt}"><span class="tf-badge-dot ${online ? 'tf-live-dot' : ''}"></span>${badgeText}</span>
               </div>
               <div class="tf-agent-devices">
-                ${(a.connectedDevices || []).map((d) => `<div class="tf-device-line">
+                ${!online
+                  ? '<div class="tf-device-line" style="color:var(--tx3)">agent offline — device status unknown</div>'
+                  : ((a.connectedDevices || []).map((d) => `<div class="tf-device-line">
                   <span class="tf-os-chip">${platformLabel(d.platform)}</span>
                   <span class="tf-device-model">${escapeHtml(d.model)}</span>
                   <span class="tf-device-serial">${escapeHtml(d.serial)}</span>
-                </div>`).join('') || '<div class="tf-device-line" style="color:var(--tx3)">no device connected</div>'}
+                </div>`).join('') || '<div class="tf-device-line" style="color:var(--tx3)">no device connected</div>')}
               </div>
             </div>
             <div class="tf-agent-check">${selected ? ICON.check('var(--accent)') : ''}</div>
@@ -318,9 +349,12 @@
           <div class="tf-card">
             <div class="tf-section-head">
               <div class="tf-eyebrow">Agent &amp; device</div>
-              <div class="tf-live-poll"><span class="tf-badge-dot tf-live-dot" style="background:var(--ok);"></span>polling every 10s</div>
+              <button class="tf-btn-refresh" id="check-devices-btn" ${state.checkingDevices ? 'disabled' : ''}>
+                ${state.checkingDevices ? `<span class="tf-spin">${ICON.refresh()}</span>Checking…` : `${ICON.refresh()}Check for devices`}
+              </button>
             </div>
             ${agentListHtml}
+            ${state.deviceCheckNote && state.agents.length ? `<div class="tf-device-note">${ICON.warn()}<span>${escapeHtml(state.deviceCheckNote)}</span></div>` : ''}
 
             <div class="tf-divider"></div>
             <div class="tf-2col">
@@ -403,6 +437,8 @@
       </div>`;
 
     // wire interactions
+    const checkBtn = document.getElementById('check-devices-btn');
+    if (checkBtn) checkBtn.onclick = checkForDevices;
     document.querySelectorAll('[data-agent]').forEach((el) => {
       el.onclick = () => { const a = state.agents.find((x) => x.id === el.dataset.agent); if (a && isAgentOnline(a)) { state.selAgentId = a.id; renderRun(); } };
     });
@@ -424,6 +460,42 @@
         openRun(data.runId, { live: true, pendingTcIds: state.runAll ? tcIds : Object.keys(state.selTcs).filter((k) => state.selTcs[k]) });
       } catch (err) { alert(err.message); }
     };
+  }
+
+  // Forces a fresh device check. Every heartbeat already carries a fresh
+  // `adb devices` scan, so we simply wait for a heartbeat that lands AFTER the
+  // click (guaranteed-current) and then re-render with the real list. If none
+  // arrives within the window, show an honest "no agent reachable" note rather
+  // than leaving a phantom device on screen. The machine with the phone must be
+  // running the agent — a browser can't scan USB/ADB itself.
+  async function checkForDevices() {
+    if (state.checkingDevices) return;
+    state.checkingDevices = true;
+    state.deviceCheckNote = null;
+    const btn = document.getElementById('check-devices-btn');
+    if (btn) { btn.disabled = true; btn.innerHTML = `<span class="tf-spin">${ICON.refresh()}</span>Checking…`; }
+
+    // Baseline every agent's SERVER heartbeat timestamp. Success = some agent
+    // produces a strictly-newer server timestamp (a fresh adb scan landed since
+    // we started watching). This compares server timestamps to each other only
+    // — never to the browser clock — so it works even when the machine clock is
+    // badly skewed. A brand-new agent (baseline 0) counts as fresh too.
+    const baseline = {};
+    state.agents.forEach((a) => { baseline[a.id] = toMillis(a.lastHeartbeatAt); });
+    const deadline = Date.now() + 15000; // browser clock, but used only as an elapsed-time budget (skew cancels)
+    let fresh = false;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 1500));
+      if (state.view !== 'run') return;                 // user navigated away mid-check
+      let data;
+      try { data = await api('agents'); }
+      catch (e) { if (!state.token) return; break; }    // a 401 already bounced us to login
+      state.agents = data.agents || [];
+      if (state.agents.some((a) => toMillis(a.lastHeartbeatAt) > (baseline[a.id] || 0))) { fresh = true; break; }
+    }
+    state.checkingDevices = false;
+    state.deviceCheckNote = fresh ? null : 'No fresh report from the agent. Make sure the TestFlow agent is running on the machine with the phone plugged in, then check again.';
+    if (state.view === 'run' && state.token) renderRun();
   }
 
   // ── Live Run / Run Detail ───────────────────────────────────────────────
@@ -715,12 +787,19 @@
 
   // ── router ───────────────────────────────────────────────────────────────
   function render() {
+    // A logged-in-but-expired token means this tab is a zombie — force re-login
+    // rather than let the user act through a dead session.
+    if (state.token && isSessionDead()) return logout('Your session expired — please sign in again.');
     if (!state.token) return renderLogin();
     if (state.mustChange) return renderSetPassword();
     if (state.view === 'history') return renderHistory();
     if (state.view === 'run-detail') return renderRunDetail();
     return renderRun();
   }
+
+  // Proactively catch session death even when the user is idle (no API call to
+  // trip the 401 path): check every 30s and kick to login the moment it lapses.
+  setInterval(() => { if (isSessionDead()) logout('Your session expired — please sign in again.'); }, 30000);
 
   render();
 })();

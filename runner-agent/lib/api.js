@@ -27,7 +27,7 @@ function baseUrl() {
   return url.replace(/\/+$/, '');
 }
 
-async function call(pathname, { method = 'GET', body, auth = true } = {}) {
+async function call(pathname, { method = 'GET', body, auth = true, _retried = false } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (auth) {
     if (!token) throw new Error('Not logged in yet.');
@@ -38,6 +38,18 @@ async function call(pathname, { method = 'GET', body, auth = true } = {}) {
     headers,
     body: body ? JSON.stringify(body) : undefined,
   });
+
+  // Sessions expire after 8h. The agent runs unattended for days, so on a 401
+  // it must transparently log back in (it has creds in .env) and retry — ONCE —
+  // instead of silently becoming a zombie that keeps failing every heartbeat
+  // and serving the server its last pre-expiry state forever. login() itself
+  // calls with auth:false, so it can never recurse into this branch.
+  if (res.status === 401 && auth && !_retried) {
+    console.warn('[testflow] session expired — re-authenticating…');
+    await login();
+    return call(pathname, { method, body, auth, _retried: true });
+  }
+
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `${method} ${pathname} failed (${res.status})`);
   return data;

@@ -96,7 +96,19 @@ module.exports = async (req, res) => {
   try {
     if (req.method === 'GET') {
       const snap = await db.collection('agents').get();
-      const agents = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      // Compute heartbeat age HERE, on the server clock, and hand the browser a
+      // ready-made age. Testers' laptop clocks can be wildly off (observed ~50s
+      // skew), so the dashboard must NOT compute `browserNow - serverTimestamp`
+      // itself — that makes a healthy agent look offline. Both this Date.now()
+      // (Vercel) and lastHeartbeatAt (Firestore serverTimestamp) are NTP-synced
+      // server clocks, so their difference is accurate well within our window.
+      const nowMs = Date.now();
+      const agents = snap.docs.map((d) => {
+        const data = d.data();
+        const hbMs = data.lastHeartbeatAt && typeof data.lastHeartbeatAt.toMillis === 'function'
+          ? data.lastHeartbeatAt.toMillis() : 0;
+        return { id: d.id, ...data, lastHeartbeatAgeMs: hbMs ? (nowMs - hbMs) : null };
+      });
       return res.status(200).json({ ok: true, agents });
     }
 
