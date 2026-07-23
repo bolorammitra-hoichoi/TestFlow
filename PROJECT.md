@@ -100,6 +100,25 @@ onward for 4.0.2 still need authoring, same as the rest of the suite.
   ~2 min if it ever dies (crash-recovery verified by killing the process).
   Deliberately at-logon in the user session, NOT a session-0 Windows Service,
   because session 0 can't reliably see USB/ADB devices.
+- **Device-connection reliability (the big one):**
+  - The agent auto re-authenticates on a 401. Sessions are 8h; before this, an
+    agent that outlived its token became a silent zombie — running, every
+    heartbeat 401ing, so the site showed its last pre-expiry device list
+    forever ("phantom device"). Now it transparently re-logs-in and retries.
+  - **Heartbeat freshness is server-authoritative.** `api/agents` computes
+    `lastHeartbeatAgeMs` on the server clock; the dashboard trusts that and
+    NEVER does `browserNow - serverTimestamp`. Non-obvious reason: testers'
+    machine clocks can be way off (the dev laptop was ~48s fast), and that skew
+    alone made healthy agents read as offline against the 45s threshold. This
+    is what makes it work on *any* system regardless of its clock — do not
+    "simplify" it back to a client-side age calc.
+  - "Check for devices" button = on-demand refresh; waits for a strictly-newer
+    server heartbeat timestamp (server-ts vs server-ts, skew-proof), else an
+    honest "no agent reachable" note. Offline agents never show phantom devices.
+  - Browser force-logs-out the instant the token expires (proactive 30s check +
+    401 backstop) so nobody drives a dead tab. Agents self-heal; humans re-login.
+  - Agent loop hardened: heartbeats before `git pull`, never pulls mid-run, and
+    the pull is timeout-bounded so an unreachable git remote can't freeze it.
 
 ## Test Devices
 
