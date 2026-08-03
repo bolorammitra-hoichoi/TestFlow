@@ -1,0 +1,8 @@
+# Shell scripts MUST keep LF endings — they run on macOS/Linux, and CRLF would
+# break the shebang line ("bad interpreter"). This is authored on Windows, so
+# pin it explicitly rather than trusting each machine's git config.
+*.sh text eol=lf
+
+# Windows-only helpers keep CRLF.
+*.ps1 text eol=crlf
+*.vbs text eol=crlf
