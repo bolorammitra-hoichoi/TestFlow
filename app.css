@@ -133,6 +133,29 @@ input, select, button { font-family: inherit; }
   border-radius: 8px; background: var(--warn-w); border: 1px solid rgba(210,153,34,.3);
   font-size: 12.5px; color: var(--tx2); }
 
+/* ── flows / test library ─────────────────────────────────────────────────── */
+.tf-flows-grid { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+.tf-flows-tree { padding: 8px; max-height: 72vh; overflow-y: auto; }
+.tf-flow-group { margin-bottom: 8px; }
+.tf-flow-group-head { display: flex; align-items: center; gap: 8px; padding: 10px 10px 6px; }
+.tf-flow-group-title { font-family: var(--ui); font-weight: 600; font-size: 13px; color: var(--tx1); }
+.tf-flow-group-meta { font-family: var(--mono); font-size: 11px; color: var(--tx3); }
+.tf-flow-group-count { margin-left: auto; font-size: 10.5px; color: var(--tx3); }
+.tf-flow-files { display: flex; flex-direction: column; gap: 2px; }
+.tf-flow-file { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+.tf-flow-file.selected { background: var(--accent-weak); }
+.tf-flow-file-name { font-size: 12.5px; color: var(--tx1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tf-flow-startup { font-family: var(--ui); font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em;
+  color: var(--tx3); background: var(--panel-2); padding: 1px 6px; border-radius: 5px; flex: none; }
+.tf-flows-viewer { padding: 0; min-height: 320px; overflow: hidden; }
+.tf-flow-viewer-head { padding: 11px 15px; border-bottom: 1px solid var(--border); background: var(--panel-2);
+  font-family: var(--mono); font-size: 11.5px; color: var(--tx2); }
+.tf-flow-viewer-path { word-break: break-all; }
+.tf-flow-viewer-empty { padding: 48px 20px; text-align: center; color: var(--tx3); font-size: 13px; }
+.tf-code { margin: 0; padding: 14px 16px; font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--tx1);
+  white-space: pre; overflow-x: auto; max-height: 66vh; overflow-y: auto; }
+@media (max-width: 900px) { .tf-flows-grid { grid-template-columns: 1fr; } }
+
 .tf-agent-list { display: flex; flex-direction: column; gap: 9px; }
 .tf-agent-row { display: flex; gap: 13px; padding: 13px 14px; border-radius: 11px; border: 1px solid var(--border); background: var(--panel-3); cursor: pointer; }
 .tf-agent-row.selected { border-color: var(--accent); background: var(--accent-weak); }

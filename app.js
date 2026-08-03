@@ -21,6 +21,7 @@
     pendingTcIds: null, isLiveView: false, pollTimer: null,
     expanded: {},
     checkingDevices: false, deviceCheckNote: null,
+    flowsCatalog: null, flowsSelectedPath: null, flowsContent: null, flowsContentLoading: false,
     histSearch: '', fApp: 'all', fPlatform: 'all', fStatus: 'all',
   };
 
@@ -246,6 +247,7 @@
         </div>
         <div class="tf-nav-links">
           <div class="tf-nav-link ${state.view === 'run' ? 'active' : ''}" data-nav="run">Run Test</div>
+          <div class="tf-nav-link ${state.view === 'flows' ? 'active' : ''}" data-nav="flows">Flows</div>
           <div class="tf-nav-link ${state.view === 'history' || state.view === 'run-detail' ? 'active' : ''}" data-nav="history">History</div>
         </div>
         <div class="tf-nav-spacer"></div>
@@ -724,6 +726,77 @@
     if (logBody) logBody.scrollTop = logBody.scrollHeight;
   }
 
+  // ── Flows (Test library) — read straight from GitHub ──────────────────────
+  async function renderFlows() {
+    renderShell(`<div class="tf-page wide">Loading flows…</div>`);
+    let data;
+    try { data = await api('flows'); }
+    catch (err) {
+      const b = document.getElementById('tf-body');
+      if (b) b.innerHTML = `<div class="tf-page wide"><div class="tf-card tf-error">${escapeHtml(err.message)}</div></div>`;
+      return;
+    }
+    state.flowsCatalog = data.flows || [];
+    renderFlowsBody();
+  }
+
+  function renderFlowsBody() {
+    const body = document.getElementById('tf-body');
+    if (!body) return;
+    const cat = state.flowsCatalog || [];
+
+    const treeHtml = cat.length ? cat.map((v) => `
+      <div class="tf-flow-group">
+        <div class="tf-flow-group-head">
+          <span class="tf-app-tile" data-app="${v.app}">${(APP_META[v.app] || {}).glyph || '?'}</span>
+          <span class="tf-flow-group-title">${escapeHtml((APP_META[v.app] || {}).name || v.app)}</span>
+          <span class="tf-flow-group-meta">${platformLabel(v.platform)} · ${escapeHtml(fmtVersion(v.version))}</span>
+          <span class="tf-flow-group-count">${v.files.filter((f) => !f.isStartup).length} TC</span>
+        </div>
+        <div class="tf-flow-files">
+          ${v.files.map((f) => {
+            const parsed = f.isStartup ? { id: '', name: 'startup-check' } : parseTc(f.tcId);
+            const sel = state.flowsSelectedPath === f.path;
+            return `<div class="tf-row-btn tf-flow-file ${sel ? 'selected' : ''}" data-flow-path="${escapeHtml(f.path)}">
+              ${f.isStartup ? `<span class="tf-flow-startup">setup</span>` : `<span class="tf-tc-id">${parsed.id}</span>`}
+              <span class="tf-flow-file-name">${escapeHtml(parsed.name)}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`).join('') : `<div class="tf-empty-note" style="padding:16px;">No flows found in the repo.</div>`;
+
+    const viewerHtml = state.flowsContentLoading
+      ? `<div class="tf-flow-viewer-empty">Loading…</div>`
+      : (state.flowsSelectedPath
+        ? `<div class="tf-flow-viewer-head"><span class="tf-flow-viewer-path">${escapeHtml(state.flowsSelectedPath)}</span></div><pre class="tf-code">${escapeHtml(state.flowsContent || '')}</pre>`
+        : `<div class="tf-flow-viewer-empty">Select a flow on the left to view its steps.</div>`);
+
+    body.innerHTML = `<div class="tf-page wide">
+      <div style="margin-bottom:20px;"><h1 class="tf-page-title">Test library</h1><div class="tf-page-sub">Flows read straight from GitHub — the source of truth. Browse them here, no agent needed.</div></div>
+      <div class="tf-flows-grid">
+        <div class="tf-card tf-flows-tree">${treeHtml}</div>
+        <div class="tf-card tf-flows-viewer">${viewerHtml}</div>
+      </div>
+    </div>`;
+
+    document.querySelectorAll('[data-flow-path]').forEach((el) => { el.onclick = () => openFlow(el.dataset.flowPath); });
+  }
+
+  async function openFlow(path) {
+    state.flowsSelectedPath = path;
+    state.flowsContent = null;
+    state.flowsContentLoading = true;
+    renderFlowsBody();
+    try {
+      const data = await api(`flows?path=${encodeURIComponent(path)}`);
+      state.flowsContent = data.content || '';
+    } catch (err) {
+      state.flowsContent = `# Failed to load this flow: ${err.message}`;
+    }
+    state.flowsContentLoading = false;
+    if (state.view === 'flows') renderFlowsBody();
+  }
+
   // ── History ──────────────────────────────────────────────────────────────
   async function renderHistory() {
     renderShell(`<div class="tf-page wide">Loading history…</div>`);
@@ -792,6 +865,7 @@
     if (state.token && isSessionDead()) return logout('Your session expired — please sign in again.');
     if (!state.token) return renderLogin();
     if (state.mustChange) return renderSetPassword();
+    if (state.view === 'flows') return renderFlows();
     if (state.view === 'history') return renderHistory();
     if (state.view === 'run-detail') return renderRunDetail();
     return renderRun();
