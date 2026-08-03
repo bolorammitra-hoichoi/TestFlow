@@ -1,0 +1,254 @@
+appId: com.viewlift.hoichoi
+---
+# TC-01 — App Overview, Navigation, Search, Login, Language, Settings (hoichoi Android v4.0.4)
+
+# Step 1 — Launch
+- launchApp
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+      - waitForAnimationToEnd
+
+# Step 2 — Home screen top elements
+- assertVisible: "Cast icon"
+- assertVisible:
+    id: "btn_Watch Now"
+- assertVisible: "WatchedList Icon"
+- assertVisible: "Movies"
+- assertVisible: "Shows"
+- assertVisible: "Audio Series"
+- assertVisible: "Free"
+
+# Step 3 — Swipe gestures
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: RIGHT
+- swipe:
+    direction: LEFT
+- swipe:
+    direction: LEFT
+- swipe:
+    direction: RIGHT
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+
+# Step 4 — Deep content validation
+- assertVisible: "Unscripted & Unfiltered"
+- assertVisible: "Remembering Uttam Kumar"
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+
+# Step 5 — Bottom nav validation
+- assertVisible:
+    id: "btn_Watch Now"
+- assertVisible: "HomeItem"
+- assertVisible: "SearchItem"
+- assertVisible: "ClipsItem"
+- assertVisible: "UpcomingItem"
+- assertVisible: "AccountItem"
+
+# Step 6 — Search
+- tapOn: "SearchItem"
+- waitForAnimationToEnd
+- assertVisible:
+    text: "Search"
+    index: 0
+- assertVisible: "Popular Searches"
+- tapOn:
+    text: "Search"
+    index: 0
+- inputText: "Eken babu"
+- waitForAnimationToEnd
+- tapOn:
+    text: "Eken Babu"
+    index: 2
+- waitForAnimationToEnd
+
+# Step 7 — Content details validation
+- extendedWaitUntil:
+    visible:
+      id: "btn_replay"
+    timeout: 540000
+- assertVisible:
+    id: "btn_replay"
+- assertVisible: "U/A 13+"
+- assertVisible: "9 Seasons"
+- assertVisible: "Detective"
+- assertVisible:
+    id: "btn_Watch Now"
+- assertVisible: "Watchlist"
+- assertVisible: "Like"
+- assertVisible: "Share"
+
+# Step 8 — Season selection and trailer
+- tapOn: "Season 9"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "btn_replay"
+    timeout: 540000
+- swipe:
+    direction: UP
+- assertVisible: "View More"
+- tapOn: "View More"
+- waitForAnimationToEnd
+- tapOn: "Close"
+- waitForAnimationToEnd
+
+# Step 9 — Clips, Back, Upcoming
+- tapOn: "ClipsItem"
+- waitForAnimationToEnd
+- tapOn:
+    point: "50%,50%"
+- tapOn: "Back"
+- waitForAnimationToEnd
+- tapOn: "Upcoming"
+- waitForAnimationToEnd
+- assertVisible: "Trailer"
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+
+# Step 10 — Login sheet validation
+- tapOn:
+    id: "Account"
+- waitForAnimationToEnd
+- assertVisible: "Login with Mobile Number"
+- assertVisible: "OTP will be sent to this number"
+- assertVisible: "or continue with"
+- assertVisible:
+    id: "login_Facebook"
+- assertVisible:
+    id: "login_Google"
+- assertVisible:
+    id: "login_Apple"
+- assertVisible:
+    id: "login_Email"
+- assertVisible: "I agree to the Terms & Privacy policy and am above 18+ years of age."
+
+# Step 11 — Login with mobile number + OTP
+- inputText: "9876543210"
+- tapOn: "Get OTP"
+- waitForAnimationToEnd
+- assertVisible:
+    text: "Confirm OTP"
+    index: 0
+- assertVisible: "sent to +919876543210"
+- assertVisible:
+    id: "BottomSheetTopBarClose"
+- assertVisible:
+    text: "Confirm OTP"
+    index: 1
+- inputText: "2"
+- inputText: "1"
+- assertVisible: "Resend OTP"
+- inputText: "2"
+- inputText: "1"
+
+# Step 12 — Account validation after login
+- tapOn: "AccountItem"
+- waitForAnimationToEnd
+- assertVisible: "TEST HC 200 Dev"
+- assertVisible:
+    text: "Continue Watching"
+    index: 1
+- assertVisible:
+    text: "Watchlist"
+    index: 1
+- assertVisible:
+    id: "btn_Share"
+- assertVisible: "Rate Us"
+- assertVisible:
+    id: "btn_Support"
+- assertVisible: "Language Selection"
+- assertVisible: "Settings"
+- assertVisible: "+9198******10"
+
+# Step 13 — Language toggle (English → Bengali → English)
+- tapOn: "Language Selection"
+- waitForAnimationToEnd
+- tapOn: "বাংলা"
+- waitForAnimationToEnd
+- tapOn: "Save Settings"
+- waitForAnimationToEnd
+- tapOn:
+    id: "Account"
+- waitForAnimationToEnd
+- assertVisible:
+    text: "দেখা চালিয়ে যান"
+    index: 1
+- tapOn: "ভাষা নির্বাচন"
+- waitForAnimationToEnd
+- tapOn: "English"
+- waitForAnimationToEnd
+- tapOn: "সেটিংস সেভ করুন"
+- waitForAnimationToEnd
+
+# Step 14 — Continue Watching history, Clear All
+- tapOn: "Account"
+- waitForAnimationToEnd
+- tapOn:
+    id: "Continue Watching"
+- waitForAnimationToEnd
+- assertVisible: "History"
+- tapOn:
+    id: "btn_Clear all history"
+- waitForAnimationToEnd
+- assertVisible: "Clear all history"
+- assertVisible: "Are you sure you want to clear all history?"
+- assertVisible:
+    id: "btn_Yes"
+- tapOn: "No"
+
+- stopApp
