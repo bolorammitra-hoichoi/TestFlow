@@ -38,7 +38,27 @@ How it stays alive:
 - If it comes back after being interrupted mid-run, it auto-cancels its own
   orphaned run rather than leaving it stuck "running" forever.
 
-### Or run it manually in a terminal
+### Recommended: install it to auto-start in the background (macOS)
+
+```
+bash install-agent-autostart.sh
+```
+
+This installs a **LaunchAgent** that runs the agent silently at login and,
+thanks to launchd's `KeepAlive`, **auto-restarts it the instant it crashes** —
+no terminal window, survives reboots. Logs go to `agent.log` in this folder.
+To remove it: `bash uninstall-agent-autostart.sh`
+
+How it stays alive:
+- Runs as a per-user **LaunchAgent** in your login session (not a root
+  LaunchDaemon at boot) — that's what lets it see USB/ADB devices exactly like
+  you do; a boot-time daemon can't.
+- launchd restarts it natively on crash (cleaner than the Windows side, which
+  needs a repeating trigger for the same effect).
+- The install script bakes your `node` path and a full `PATH` into the plist so
+  `adb`, `maestro`, and `git` resolve under launchd's otherwise-minimal PATH.
+
+### Or run it manually in a terminal (any OS)
 
 ```
 npm start
@@ -56,4 +76,5 @@ deps, but it's the habit). Then use one of the two run options above.
 
 - Android only — iOS (idb/simctl) isn't wired up yet, needs a Mac.
 - Runs one TC at a time, one run at a time per agent — if two run requests land on the same agent, the second waits until the first finishes.
-- Windows autostart only so far (the install script is PowerShell/Task Scheduler). Mac/Linux still use `npm start` in a terminal, or a launchd/systemd unit you set up yourself.
+- Background autostart is provided for **Windows** (`install-agent-autostart.ps1`, Task Scheduler) and **macOS** (`install-agent-autostart.sh`, launchd). Linux still uses `npm start` in a terminal, or a systemd unit you set up yourself.
+- If `.env` is misconfigured (bad login), the agent exits and the autostart re-launches it every ~10s until fixed — check `agent.log` if the site never shows the device.
