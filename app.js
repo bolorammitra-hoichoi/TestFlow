@@ -22,6 +22,7 @@
     expanded: {},
     checkingDevices: false, deviceCheckNote: null,
     flowsCatalog: null, flowsSelectedPath: null, flowsContent: null, flowsContentLoading: false,
+    flowsUploadOpen: false,
     histSearch: '', fApp: 'all', fPlatform: 'all', fStatus: 'all',
   };
 
@@ -771,8 +772,40 @@
         ? `<div class="tf-flow-viewer-head"><span class="tf-flow-viewer-path">${escapeHtml(state.flowsSelectedPath)}</span></div><pre class="tf-code">${escapeHtml(state.flowsContent || '')}</pre>`
         : `<div class="tf-flow-viewer-empty">Select a flow on the left to view its steps.</div>`);
 
+    // distinct existing versions across the catalog, for the upload form datalist
+    const allVersions = [...new Set(cat.map((v) => v.version))].sort();
+    const uploadHtml = state.flowsUploadOpen ? `
+      <div class="tf-card tf-upload-form">
+        <div class="tf-upload-head">Upload a test case to GitHub</div>
+        <div class="tf-upload-grid">
+          <div><label class="tf-label">App</label><select class="tf-input" id="ul-app">
+            <option value="hoichoi">hoichoi</option><option value="sooper">sooper</option></select></div>
+          <div><label class="tf-label">Platform</label><select class="tf-input" id="ul-platform">
+            <option value="android">Android</option><option value="ios">iOS</option>
+            <option value="androidtv">Android TV</option><option value="firetv">Fire TV</option></select></div>
+          <div><label class="tf-label">Version</label>
+            <input class="tf-input" id="ul-version" list="ul-versions" placeholder="e.g. 4.0.2" />
+            <datalist id="ul-versions">${allVersions.map((v) => `<option value="${escapeHtml(v)}"></option>`).join('')}</datalist></div>
+          <div><label class="tf-label">Test case name</label><input class="tf-input" id="ul-name" placeholder="e.g. Login and OTP" /></div>
+        </div>
+        <label class="tf-label">YAML file (optional — fills the box below)</label>
+        <input type="file" id="ul-file" accept=".yaml,.yml" class="tf-input" />
+        <label class="tf-label">YAML content</label>
+        <textarea class="tf-input tf-upload-textarea" id="ul-content" rows="12" placeholder="appId: com.viewlift.hoichoi&#10;---&#10;- launchApp&#10;- waitForAnimationToEnd&#10;- stopApp"></textarea>
+        <div class="tf-upload-actions">
+          <button class="tf-btn-run" id="ul-submit">${ICON.runIcon()}Submit to GitHub</button>
+          <button class="tf-btn-rerun secondary" id="ul-cancel">Cancel</button>
+          <span id="ul-msg" class="tf-upload-msg"></span>
+        </div>
+        <div class="tf-upload-hint">Saved as <code>flows/{app}/{platform}/{version}/TC-NN-your-name.yaml</code> — the number is assigned automatically. Every tester's agent picks it up on its next sync.</div>
+      </div>` : '';
+
     body.innerHTML = `<div class="tf-page wide">
-      <div style="margin-bottom:20px;"><h1 class="tf-page-title">Test library</h1><div class="tf-page-sub">Flows read straight from GitHub — the source of truth. Browse them here, no agent needed.</div></div>
+      <div class="tf-flows-header">
+        <div><h1 class="tf-page-title">Test library</h1><div class="tf-page-sub">Flows read straight from GitHub — the source of truth. Browse or add them here, no agent needed.</div></div>
+        <button class="tf-btn-refresh" id="upload-toggle">${state.flowsUploadOpen ? 'Close' : '+ Upload test case'}</button>
+      </div>
+      ${uploadHtml}
       <div class="tf-flows-grid">
         <div class="tf-card tf-flows-tree">${treeHtml}</div>
         <div class="tf-card tf-flows-viewer">${viewerHtml}</div>
@@ -780,6 +813,45 @@
     </div>`;
 
     document.querySelectorAll('[data-flow-path]').forEach((el) => { el.onclick = () => openFlow(el.dataset.flowPath); });
+    document.getElementById('upload-toggle').onclick = () => { state.flowsUploadOpen = !state.flowsUploadOpen; renderFlowsBody(); };
+    if (state.flowsUploadOpen) wireUploadForm();
+  }
+
+  function wireUploadForm() {
+    document.getElementById('ul-cancel').onclick = () => { state.flowsUploadOpen = false; renderFlowsBody(); };
+    // A chosen .yaml file fills the textarea so it can be reviewed/edited before submit.
+    document.getElementById('ul-file').onchange = (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => { document.getElementById('ul-content').value = reader.result; };
+      reader.readAsText(file);
+    };
+    document.getElementById('ul-submit').onclick = async () => {
+      const msg = document.getElementById('ul-msg');
+      const btn = document.getElementById('ul-submit');
+      const payload = {
+        app: document.getElementById('ul-app').value,
+        platform: document.getElementById('ul-platform').value,
+        version: document.getElementById('ul-version').value.trim(),
+        name: document.getElementById('ul-name').value.trim(),
+        content: document.getElementById('ul-content').value,
+      };
+      if (!payload.version) { msg.className = 'tf-upload-msg err'; msg.textContent = 'Enter a version.'; return; }
+      if (!payload.name) { msg.className = 'tf-upload-msg err'; msg.textContent = 'Enter a test case name.'; return; }
+      if (!payload.content.trim()) { msg.className = 'tf-upload-msg err'; msg.textContent = 'Paste or upload the YAML.'; return; }
+      btn.disabled = true; msg.className = 'tf-upload-msg'; msg.textContent = 'Committing to GitHub…';
+      try {
+        const data = await api('flows', { method: 'POST', body: payload });
+        state.flowsUploadOpen = false;
+        await renderFlows();      // reload catalog from GitHub (new file now present)
+        openFlow(data.path);      // select + show what was just uploaded
+      } catch (err) {
+        btn.disabled = false;
+        msg.className = 'tf-upload-msg err';
+        msg.textContent = err.message;
+      }
+    };
   }
 
   async function openFlow(path) {

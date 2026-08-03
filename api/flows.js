@@ -17,8 +17,12 @@ const auth = require('../lib/auth');
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
+
+function slugify(s) {
+  return String(s).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
 }
 
 const REPO = process.env.GITHUB_REPO || 'bolorammitra-hoichoi/TestFlow';
@@ -38,12 +42,73 @@ function ghHeaders(accept) {
 module.exports = async (req, res) => {
   setCors(res);
   if (req.method === 'OPTIONS') return res.status(204).end();
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const payload = auth.verify(auth.bearer(req));
   if (!payload) return res.status(401).json({ error: 'Session expired — sign in again.' });
 
   try {
+    // ── POST: commit a new test case to GitHub ──────────────────────────────
+    if (req.method === 'POST') {
+      const body = req.body || {};
+      const app = String(body.app || '').trim();
+      const platform = String(body.platform || '').trim();
+      const version = String(body.version || '').trim();
+      const name = String(body.name || '').trim();
+      const content = String(body.content || '');
+
+      // folder-name safety: no slashes, no "..", conservative charset
+      const SAFE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+      if (!SAFE.test(app) || app.includes('..')) return res.status(400).json({ error: 'Invalid app name.' });
+      if (!SAFE.test(platform) || platform.includes('..')) return res.status(400).json({ error: 'Invalid platform.' });
+      if (!SAFE.test(version) || version.includes('..')) return res.status(400).json({ error: 'Invalid version (letters, numbers, dot, dash only).' });
+      const slug = slugify(name);
+      if (!slug) return res.status(400).json({ error: 'Give the test case a name.' });
+      if (!content.trim()) return res.status(400).json({ error: 'The YAML content is empty.' });
+      if (content.length > 200000) return res.status(400).json({ error: 'That file is too large.' });
+
+      // Find the next TC-NN number within this version's folder (404 = folder
+      // doesn't exist yet → start at TC-01).
+      const dir = `flows/${app}/${platform}/${version}`;
+      const dirUrl = `https://api.github.com/repos/${REPO}/contents/${dir.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(BRANCH)}`;
+      const listRes = await fetch(dirUrl, { headers: ghHeaders('application/vnd.github+json') });
+      let maxNum = 0;
+      if (listRes.ok) {
+        const items = await listRes.json();
+        if (Array.isArray(items)) {
+          for (const it of items) {
+            const mm = /^TC-(\d+)/i.exec(it.name || '');
+            if (mm) maxNum = Math.max(maxNum, parseInt(mm[1], 10));
+          }
+        }
+      } else if (listRes.status !== 404) {
+        if (listRes.status === 401 || listRes.status === 403) return res.status(502).json({ error: 'GitHub rejected the token — it may lack access to the repo.' });
+        return res.status(502).json({ error: `GitHub error listing folder (${listRes.status})` });
+      }
+      const nn = String(maxNum + 1).padStart(2, '0');
+      const filename = `TC-${nn}-${slug}.yaml`;
+      const filePathNew = `${dir}/${filename}`;
+
+      const putUrl = `https://api.github.com/repos/${REPO}/contents/${filePathNew.split('/').map(encodeURIComponent).join('/')}`;
+      const putRes = await fetch(putUrl, {
+        method: 'PUT',
+        headers: Object.assign(ghHeaders('application/vnd.github+json'), { 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          message: `Add ${filePathNew} via TestFlow web upload (${payload.email})`,
+          content: Buffer.from(content, 'utf8').toString('base64'),
+          branch: BRANCH,
+        }),
+      });
+      if (putRes.status === 403 || putRes.status === 401) {
+        return res.status(502).json({ error: 'GitHub rejected the write — the GITHUB_TOKEN needs Contents: Read and write.' });
+      }
+      if (!putRes.ok) {
+        const errData = await putRes.json().catch(() => ({}));
+        return res.status(502).json({ error: errData.message || `GitHub error creating file (${putRes.status})` });
+      }
+      return res.status(200).json({ ok: true, path: filePathNew, filename });
+    }
+
     const filePath = req.query.path;
 
     // ── single-file view: raw YAML text ────────────────────────────────────
