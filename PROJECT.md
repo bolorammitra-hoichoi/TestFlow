@@ -78,9 +78,9 @@ onward for 4.0.2 still need authoring, same as the rest of the suite.
 - sooper's flows — none exist yet; same `flows/sooper/{platform}/{version}/`
   layout as hoichoi once authored. sooper's package id(s) also need filling
   into `runner-agent/agent.js`'s `APP_PACKAGE_IDS` map.
-- Mac/Linux autostart for the runner agent (the Windows Task Scheduler
-  installer is done; other OSes still use `npm start` or a hand-rolled
-  launchd/systemd unit).
+- Linux autostart for the runner agent (Windows Task Scheduler and macOS
+  launchd installers are both done; Linux still uses `npm start` or a
+  hand-rolled systemd unit).
 - Maestro's stdout is streamed as the raw log for now — no structured
   per-step JUnit parsing yet; confirm the CLI's actual output format against
   a real run before building anything that depends on its exact shape.
